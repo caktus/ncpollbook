@@ -1,0 +1,25 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.10.12
+    hooks:
+      - id: uv-lock
+  - repo: local
+    hooks:
+      - id: missing-migrations
+        name: "Missing migrations"
+        entry: uv run manage.py makemigrations --check --settings=config.settings
+        language: system
+        pass_filenames: false
+        types: ["file", "python"]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.15.7
+    hooks:
+      # Run the linter.
+      - id: ruff-check
+        args: [--fix]
+      # Run the formatter.
+      - id: ruff-format
