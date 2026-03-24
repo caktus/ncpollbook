@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     "django_pgviews",
     # Local
     "apps.ncsbe",
-    # "apps.agent",
+    "apps.agent",
 ]
 
 MIDDLEWARE = [

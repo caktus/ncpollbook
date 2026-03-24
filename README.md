@@ -37,6 +37,30 @@ uv run manage.py ncsbe peek
 
 Data is cached in `scratch/data/` after the first download.
 
+## SQL Agent (Web Chat UI)
+
+An AI agent can query the `VoterView` and `VoterEventView` materialized views via natural language.
+
+```bash
+# Set the LLM model (defaults to openai:gpt-4o)
+export VOTER_REG_MODEL=openai:gpt-4o
+export OPENAI_API_KEY=sk-...
+
+# Start the web chat UI
+uv run uvicorn apps.agent.web:app --host 127.0.0.1 --port 7932
+```
+
+Then open [http://127.0.0.1:7932](http://127.0.0.1:7932) in your browser.
+
+Sample questions:
+- How many people are registered to vote in Durham County?
+- What is the breakdown of party affiliation among voters aged 18–25 vs 65+?
+- What percentage of voters who voted in the 2020 General also voted in the 2022 Primary?
+
+The agent has two tools:
+- **run_sql_query** — generates and executes a SQL query, returns a markdown table
+- **run_python_code** — executes LLM-written Python in a secure [Monty](https://github.com/pydantic/monty) sandbox, with `run_sql_query` available for chaining multiple queries
+
 ## Development
 
 ```bash
