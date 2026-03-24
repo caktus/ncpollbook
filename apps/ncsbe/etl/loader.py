@@ -5,13 +5,29 @@ The loader truncates the target table before loading (full-refresh model) so
 each weekly snapshot replaces the previous one entirely.
 """
 
+import logging
 import time
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 
 import psycopg
 from django.db import connection
 
 from apps.ncsbe.models import Voter, VoterEvent
+
+logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def elapsed_timer() -> Generator[list[float]]:
+    """Context manager that records elapsed seconds into a single-element list."""
+    result: list[float] = [0.0]
+    t0 = time.monotonic()
+    try:
+        yield result
+    finally:
+        result[0] = time.monotonic() - t0
 
 
 def _get_psycopg_conn() -> psycopg.Connection:
@@ -39,10 +55,10 @@ def _copy_tsv_into_table(conn: psycopg.Connection, filepath: Path, table: str) -
     )
 
     with conn.cursor() as cur:
-        print(f"  Truncating {table} …")
+        logger.info("Truncating %s …", table)
         cur.execute(f"TRUNCATE TABLE {table} RESTART IDENTITY")
 
-        print(f"  Loading {filepath.name} → {table} …")
+        logger.info("Loading %s → %s …", filepath.name, table)
         with (
             filepath.open("r", encoding="utf-8", errors="replace") as fh,
             cur.copy(copy_sql) as copy,
@@ -79,29 +95,17 @@ def _column_list(conn: psycopg.Connection, table: str) -> str:
     return ", ".join(cols)
 
 
-def load_voter_file(filepath: Path) -> tuple[int, float]:
-    """
-    Load ncvoter_Statewide.txt into the Voter table.
-    Returns (row_count, elapsed_seconds).
-    """
-    t0 = time.monotonic()
+def load_voter_file(filepath: Path) -> int:
+    """Load ncvoter_Statewide.txt into the Voter table. Returns row count."""
     with _get_psycopg_conn() as conn:
         count = _copy_tsv_into_table(conn, filepath, Voter._meta.db_table)
         conn.commit()
-    elapsed = time.monotonic() - t0
-    print(f"  Loaded {count:,} voter registration rows in {elapsed:.1f}s.")
-    return count, elapsed
+    return count
 
 
-def load_history_file(filepath: Path) -> tuple[int, float]:
-    """
-    Load ncvhis_Statewide.txt into the VoterEvent table.
-    Returns (row_count, elapsed_seconds).
-    """
-    t0 = time.monotonic()
+def load_history_file(filepath: Path) -> int:
+    """Load ncvhis_Statewide.txt into the VoterEvent table. Returns row count."""
     with _get_psycopg_conn() as conn:
         count = _copy_tsv_into_table(conn, filepath, VoterEvent._meta.db_table)
         conn.commit()
-    elapsed = time.monotonic() - t0
-    print(f"  Loaded {count:,} voter history rows in {elapsed:.1f}s.")
-    return count, elapsed
+    return count

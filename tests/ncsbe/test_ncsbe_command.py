@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from apps.ncsbe.etl.loader import load_history_file, load_voter_file
+from apps.ncsbe.etl.loader import elapsed_timer, load_history_file, load_voter_file
 from apps.ncsbe.management.commands.ncsbe import peek_file
 
 
@@ -30,6 +30,20 @@ class TestPeekFile:
         assert len(result[0][2]) <= 3
 
 
+class TestElapsedTimer:
+    def test_records_elapsed(self):
+        with elapsed_timer() as t:
+            pass
+        assert t[0] >= 0
+
+    def test_elapsed_increases_with_time(self):
+        import time
+
+        with elapsed_timer() as t:
+            time.sleep(0.01)
+        assert t[0] >= 0.01
+
+
 class TestLoadTiming:
     def _make_mock_loader(self, row_count: int):
         """Return a mock that patches DB internals and returns row_count."""
@@ -45,20 +59,18 @@ class TestLoadTiming:
         mock_conn.__exit__ = MagicMock(return_value=False)
         return mock_conn
 
-    def test_load_voter_file_returns_count_and_elapsed(self, tmp_path):
+    def test_load_voter_file_returns_count(self, tmp_path):
         tsv = tmp_path / "ncvoter.txt"
         tsv.write_text("header\n", encoding="utf-8")
         mock_conn = self._make_mock_loader(42)
         with patch("apps.ncsbe.etl.loader._get_psycopg_conn", return_value=mock_conn):
-            count, elapsed = load_voter_file(tsv)
+            count = load_voter_file(tsv)
         assert count == 42
-        assert elapsed >= 0
 
-    def test_load_history_file_returns_count_and_elapsed(self, tmp_path):
+    def test_load_history_file_returns_count(self, tmp_path):
         tsv = tmp_path / "ncvhis.txt"
         tsv.write_text("header\n", encoding="utf-8")
         mock_conn = self._make_mock_loader(99)
         with patch("apps.ncsbe.etl.loader._get_psycopg_conn", return_value=mock_conn):
-            count, elapsed = load_history_file(tsv)
+            count = load_history_file(tsv)
         assert count == 99
-        assert elapsed >= 0

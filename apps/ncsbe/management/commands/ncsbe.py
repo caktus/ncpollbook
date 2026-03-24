@@ -2,11 +2,11 @@
 NCSBE voter data management commands.
 
 Usage:
-    uv run manage.py ncsbe etl     # download and load data (default)
-    uv run manage.py ncsbe peek    # inspect first 100 rows of each file
+    uv run manage.py ncsbe etl                  # download, load, and refresh views
+    uv run manage.py ncsbe etl --refresh-only   # only refresh materialized views
+    uv run manage.py ncsbe peek                 # inspect first 100 rows of each file
 """
 
-import time
 from pathlib import Path
 
 import djclick as click
@@ -15,7 +15,7 @@ from django.conf import settings
 
 from apps.ncsbe.constants import NCVHIS_TXT_FILENAME, NCVOTER_TXT_FILENAME
 from apps.ncsbe.etl.download import download_ncsbe_files
-from apps.ncsbe.etl.loader import load_history_file, load_voter_file
+from apps.ncsbe.etl.loader import elapsed_timer, load_history_file, load_voter_file
 from apps.ncsbe.models import VoterEventView, VoterView
 
 
@@ -33,34 +33,35 @@ def command() -> None:
 
 
 @command.command()
-def etl() -> None:
+@click.option(
+    "--refresh-only", is_flag=True, default=False, help="Only refresh materialized views."
+)
+def etl(refresh_only: bool) -> None:
     """Download and load NCSBE voter data into PostgreSQL."""
-    scratch_dir = settings.SCRATCH_DIR
-    click.echo(f"=== Downloading NCSBE voter data (cache: {scratch_dir}) ===")
-    ncvoter_path, ncvhis_path = download_ncsbe_files(scratch_dir)
+    with elapsed_timer() as total:
+        if not refresh_only:
+            scratch_dir = settings.SCRATCH_DIR
+            click.echo(f"=== Downloading NCSBE voter data (cache: {scratch_dir}) ===")
+            ncvoter_path, ncvhis_path = download_ncsbe_files(scratch_dir)
 
-    t_start = time.monotonic()
+            click.echo("\n=== Loading voter registration data ===")
+            with elapsed_timer() as t:
+                voter_count = load_voter_file(ncvoter_path)
+            rps = voter_count / t[0] if t[0] else 0
+            click.secho(f"  ✓ {voter_count:,} rows in {t[0]:.1f}s ({rps:,.0f} rows/s)", fg="green")
 
-    click.echo("\n=== Loading voter registration data ===")
-    voter_count, voter_elapsed = load_voter_file(ncvoter_path)
-    voter_rps = voter_count / voter_elapsed if voter_elapsed else 0
-    click.secho(
-        f"  ✓ {voter_count:,} rows in {voter_elapsed:.1f}s ({voter_rps:,.0f} rows/s)",
-        fg="green",
-    )
+            click.echo("\n=== Loading voter history data ===")
+            with elapsed_timer() as t:
+                history_count = load_history_file(ncvhis_path)
+            rps = history_count / t[0] if t[0] else 0
+            click.secho(
+                f"  ✓ {history_count:,} rows in {t[0]:.1f}s ({rps:,.0f} rows/s)", fg="green"
+            )
 
-    click.echo("\n=== Loading voter history data ===")
-    history_count, history_elapsed = load_history_file(ncvhis_path)
-    history_rps = history_count / history_elapsed if history_elapsed else 0
-    click.secho(
-        f"  ✓ {history_count:,} rows in {history_elapsed:.1f}s ({history_rps:,.0f} rows/s)",
-        fg="green",
-    )
+        click.echo("\n=== Refreshing materialized views ===")
+        _refresh_views()
 
-    total = time.monotonic() - t_start
-    click.echo("\n=== Refreshing materialized views ===")
-    _refresh_views()
-    click.secho(f"\nDone in {total:.1f}s total.", fg="green")
+    click.secho(f"\nDone in {total[0]:.1f}s total.", fg="green")
 
 
 @command.command()

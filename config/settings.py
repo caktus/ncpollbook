@@ -87,6 +87,14 @@ DATABASES = {
         ssl_require=os.getenv("DATABASE_SSL_REQUIRE", "False") == "True",
     ),
 }
+# django-pgviews-redux settings:
+# - CHECK_SQL_CHANGED: Skip recreating views if their SQL definition hasn't changed
+#   (even during sync_pgviews --force, unless the SQL is actually different)
+MATERIALIZED_VIEWS_CHECK_SQL_CHANGED = True
+# - DISABLE_SYNC_ON_MIGRATE: Skip creating/updating views when the migrate command is run.
+#   When migrate is run, new views will not be created automatically, and existing
+#   views will not be recreated even if their SQL definition has changed.
+MATERIALIZED_VIEWS_DISABLE_SYNC_ON_MIGRATE = True
 
 
 # Password validation
@@ -126,6 +134,33 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "formatters": {
+        "simple": {
+            "format": "%(levelname)s %(name)s %(message)s",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "apps": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 
 # Directory where agent parquet exports are written
 EXPORT_DIR = BASE_DIR / "exports"
