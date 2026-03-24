@@ -8,13 +8,20 @@ dependencies = [
     "click>=8.3.1",
     "dj-database-url>=3.1.2",
     "django>=6.0.3",
+    "django-click>=2.5.0",
+    "django-pgviews-redux>=1.2.0",
+    "httpx>=0.28.1",
     "polars>=1.39.3",
     "psycopg>=3.3.3",
+    "pydantic-ai-slim[web]>=1.70.0",
 ]
 
 [dependency-groups]
 dev = [
+    "factory-boy>=3.3.3",
     "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "pytest-django>=4.12.0",
     "ruff>=0.15.7",
 ]
 
@@ -50,3 +57,9 @@ known-first-party = ["apps", "config"]
 
 [tool.uv]
 default-groups = ["dev"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

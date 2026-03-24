@@ -9,6 +9,7 @@ wheels/
 # Virtual environments
 .venv
 .envrc
+.vscode
 
 .sqlite3
 

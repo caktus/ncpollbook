@@ -40,6 +40,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Third-party
+    "django_pgviews",
+    # Local
+    "apps.ncsbe",
+    # "apps.agent",
 ]
 
 MIDDLEWARE = [
@@ -119,3 +124,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Directory where agent parquet exports are written
+EXPORT_DIR = BASE_DIR / "exports"
+
+# Directory where downloaded NCSBE data files are cached
+SCRATCH_DIR = BASE_DIR / "scratch" / "data"
+
+# LLM model to use for the voter analysis agents — override via env var
+# Example: VOTER_REG_MODEL=ollama:llama3.3
+VOTER_REG_MODEL = os.getenv("VOTER_REG_MODEL", "openai:gpt-4o")
