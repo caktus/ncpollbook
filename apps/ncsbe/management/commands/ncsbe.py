@@ -16,16 +16,15 @@ from django.conf import settings
 from apps.ncsbe.constants import NCVHIS_TXT_FILENAME, NCVOTER_TXT_FILENAME
 from apps.ncsbe.etl.download import download_ncsbe_files
 from apps.ncsbe.etl.loader import load_history_file, load_voter_file
+from apps.ncsbe.models import VoterEventView, VoterView
 
-# from apps.ncsbe.models import MvElections, MvVoterHistory, MvVoterRegistration
 
-
-# def _refresh_views() -> None:
-#     for view_cls in (MvVoterRegistration, MvVoterHistory, MvElections):
-#         name = view_cls._meta.db_table
-#         click.echo(f"  Refreshing {name} …")
-#         view_cls.refresh(concurrently=False)
-#         click.secho(f"  ✓ {name} refreshed", fg="green")
+def _refresh_views() -> None:
+    for view_cls in (VoterView, VoterEventView):
+        name = view_cls._meta.db_table
+        click.echo(f"  Refreshing {name} …")
+        view_cls.refresh(concurrently=False)
+        click.secho(f"  ✓ {name} refreshed", fg="green")
 
 
 @click.group()
@@ -59,8 +58,8 @@ def etl() -> None:
     )
 
     total = time.monotonic() - t_start
-    # click.echo("\n=== Refreshing materialized views ===")
-    # _refresh_views()
+    click.echo("\n=== Refreshing materialized views ===")
+    _refresh_views()
     click.secho(f"\nDone in {total:.1f}s total.", fg="green")
 
 

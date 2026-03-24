@@ -1,4 +1,5 @@
 from django.db import models
+from django_pgviews import view as pg
 
 ELECTION_TYPE_CASE = """
     CASE
@@ -148,185 +149,139 @@ class VoterEvent(models.Model):
         return f"{self.ncid} — {self.election_lbl}"
 
 
-# # ---------------------------------------------------------------------------
-# # Materialized Views
-# # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Materialized Views
+# ---------------------------------------------------------------------------
 
 
-# class MvVoterRegistration(pgviews.MaterializedView):
-#     """
-#     One row per registered voter. Excludes all PII columns.
-#     Covers active (A) and inactive (I) voters only.
-#     Casts char fields to appropriate types for clean querying.
+class VoterView(pg.MaterializedView):
+    """
+    One row per registered voter. Excludes all PII columns.
+    Covers all statuses. Casts char fields to appropriate types for clean querying.
 
-#     Indexes:
-#       - UNIQUE on ncid (used for joins with mv_voter_history)
-#       - Composite: county_desc, party_cd, status_cd
-#       - age_at_year_end, gender_code, race_code, registr_dt
-#     """
+    Indexes:
+      - UNIQUE on ncid (used for joins with VoterEventView)
+      - Composite: county_desc, party_cd, status_cd
+      - age_at_year_end, gender_code, race_code, registr_dt
+    """
 
-#     concurrent_index = "ncid"
+    concurrent_index = "ncid"
 
-#     sql = """
-#         SELECT
-#             -- Geography
-#             county_id::smallint,
-#             county_desc,
-#             precinct_abbrv,
-#             precinct_desc,
-#             cong_dist_abbrv,
-#             nc_senate_abbrv,
-#             nc_house_abbrv,
-#             municipality_desc,
+    sql = """
+        SELECT
+            -- Geography
+            county_id::smallint,
+            county_desc,
+            precinct_abbrv,
+            precinct_desc,
+            cong_dist_abbrv,
+            nc_senate_abbrv,
+            nc_house_abbrv,
+            municipality_desc,
 
-#             -- Voter identity (no PII)
-#             ncid,
-#             status_cd,
-#             voter_status_desc,
-#             party_cd,
-#             gender_code,
-#             race_code,
-#             ethnic_code,
+            -- Voter identity (no PII)
+            ncid,
+            status_cd,
+            voter_status_desc,
+            party_cd,
+            gender_code,
+            race_code,
+            ethnic_code,
 
-#             -- Age (cast from char to int; invalid values become NULL)
-#             NULLIF(TRIM(birth_year), '')::smallint    AS birth_year,
-#             NULLIF(TRIM(age_at_year_end), '')::smallint AS age_at_year_end,
+            -- Age (cast from char to int; invalid values become NULL)
+            NULLIF(TRIM(birth_year), '')::smallint    AS birth_year,
+            NULLIF(TRIM(age_at_year_end), '')::smallint AS age_at_year_end,
 
-#             -- Registration metadata
-#             NULLIF(TRIM(registr_dt), 'xx/xx/xxxx')::date AS registr_dt,
-#             date_part('year', NULLIF(TRIM(registr_dt), 'xx/xx/xxxx')::date)::smallint AS registr_year
+            -- Registration metadata
+            CASE WHEN TRIM(registr_dt) ~ '^\\d{2}/\\d{2}/\\d{4}$'
+                 THEN TRIM(registr_dt)::date END AS registr_dt,
+            date_part('year', CASE WHEN TRIM(registr_dt) ~ '^\\d{2}/\\d{2}/\\d{4}$'
+                 THEN TRIM(registr_dt)::date END)::smallint AS registr_year
 
-#         FROM ncvoter_statewide
-#         WHERE status_cd IN ('A', 'I')
-#           AND TRIM(birth_year) ~ '^[0-9]{{4}}$'
-#     """
+        FROM ncsbe_voter
+        WHERE TRIM(birth_year) ~ '^[0-9]{4}$'
+    """
 
-#     county_id = models.SmallIntegerField(null=True)
-#     county_desc = models.CharField(max_length=15, blank=True)
-#     precinct_abbrv = models.CharField(max_length=6, blank=True)
-#     precinct_desc = models.CharField(max_length=60, blank=True)
-#     cong_dist_abbrv = models.CharField(max_length=6, blank=True)
-#     nc_senate_abbrv = models.CharField(max_length=6, blank=True)
-#     nc_house_abbrv = models.CharField(max_length=6, blank=True)
-#     municipality_desc = models.CharField(max_length=60, blank=True)
-#     ncid = models.CharField(max_length=12, primary_key=True)
-#     status_cd = models.CharField(max_length=2, blank=True)
-#     voter_status_desc = models.CharField(max_length=25, blank=True)
-#     party_cd = models.CharField(max_length=3, blank=True)
-#     gender_code = models.CharField(max_length=1, blank=True)
-#     race_code = models.CharField(max_length=3, blank=True)
-#     ethnic_code = models.CharField(max_length=3, blank=True)
-#     birth_year = models.SmallIntegerField(null=True)
-#     age_at_year_end = models.SmallIntegerField(null=True)
-#     registr_dt = models.DateField(null=True)
-#     registr_year = models.SmallIntegerField(null=True)
+    county_id = models.SmallIntegerField(null=True)
+    county_desc = models.CharField(max_length=15, blank=True)
+    precinct_abbrv = models.CharField(max_length=6, blank=True)
+    precinct_desc = models.CharField(max_length=60, blank=True)
+    cong_dist_abbrv = models.CharField(max_length=6, blank=True)
+    nc_senate_abbrv = models.CharField(max_length=6, blank=True)
+    nc_house_abbrv = models.CharField(max_length=6, blank=True)
+    municipality_desc = models.CharField(max_length=60, blank=True)
+    ncid = models.CharField(max_length=12, primary_key=True)
+    status_cd = models.CharField(max_length=2, blank=True)
+    voter_status_desc = models.CharField(max_length=25, blank=True)
+    party_cd = models.CharField(max_length=3, blank=True)
+    gender_code = models.CharField(max_length=1, blank=True)
+    race_code = models.CharField(max_length=3, blank=True)
+    ethnic_code = models.CharField(max_length=3, blank=True)
+    birth_year = models.SmallIntegerField(null=True)
+    age_at_year_end = models.SmallIntegerField(null=True)
+    registr_dt = models.DateField(null=True)
+    registr_year = models.SmallIntegerField(null=True)
 
-#     class Meta:
-#         app_label = "ncsbe"
-#         db_table = "mv_voter_registration"
-#         managed = False
+    class Meta:
+        managed = False
 
-#     def __str__(self) -> str:
-#         return str(self.ncid)
+    def __str__(self) -> str:
+        return str(self.ncid)
 
 
-# class MvVoterHistory(pgviews.MaterializedView):
-#     """
-#     One row per vote cast per voter per election.
-#     election_lbl is cast to a proper date.
-#     election_type is derived from election_desc using ordered CASE matching
-#     (SECOND_PRIMARY must precede PRIMARY to avoid misclassification).
+class VoterEventView(pg.MaterializedView):
+    """
+    One row per vote cast per voter per election.
+    election_lbl is cast to a proper date.
+    election_type is derived from election_desc using ordered CASE matching
+    (SECOND_PRIMARY must precede PRIMARY to avoid misclassification).
 
-#     Note on voting_method:
-#       - 'ELIGIBLE DID NOT VOTE' and 'TRANSFER' are administrative records
-#         and should be excluded when computing turnout.
+    Note on voting_method:
+      - 'ELIGIBLE DID NOT VOTE' and 'TRANSFER' are administrative records
+        and should be excluded when computing turnout.
 
-#     Note on voted_party_cd:
-#       - Empty string values exist; queries grouping by this column should
-#         handle them explicitly (filter or label as 'Unknown').
-#     """
+    Note on voted_party_cd:
+      - Empty string values exist; queries grouping by this column should
+        handle them explicitly (filter or label as 'Unknown').
+    """
 
-#     concurrent_index = "id"
+    concurrent_index = "id"
 
-#     sql = f"""
-#         SELECT
-#             ROW_NUMBER() OVER ()                 AS id,
-#             ncid,
-#             county_desc,
-#             voted_county_desc,
+    sql = f"""
+        SELECT
+            ROW_NUMBER() OVER ()                 AS id,
+            ncid,
+            county_desc,
+            voted_county_desc,
 
-#             -- Election identity
-#             election_lbl::date                   AS election_date,
-#             election_desc,
-#             {ELECTION_TYPE_CASE}                 AS election_type,
-#             date_part('year', election_lbl::date)::smallint AS election_year,
+            -- Election identity
+            election_lbl::date                   AS election_date,
+            election_desc,
+            {ELECTION_TYPE_CASE}                 AS election_type,
+            date_part('year', election_lbl::date)::smallint AS election_year,
 
-#             -- Voting behaviour
-#             voting_method,
-#             voted_party_cd,
-#             voted_party_desc
+            -- Voting behaviour
+            voting_method,
+            voted_party_cd,
+            voted_party_desc
 
-#         FROM ncvhis_statewide
-#     """
+        FROM ncsbe_voterevent
+    """
 
-#     id = models.BigIntegerField(primary_key=True)
-#     ncid = models.CharField(max_length=12)
-#     county_desc = models.CharField(max_length=20, blank=True)
-#     voted_county_desc = models.CharField(max_length=60, blank=True)
-#     election_date = models.DateField(null=True)
-#     election_desc = models.CharField(max_length=230, blank=True)
-#     election_type = models.CharField(max_length=20, blank=True)
-#     election_year = models.SmallIntegerField(null=True)
-#     voting_method = models.CharField(max_length=30, blank=True)
-#     voted_party_cd = models.CharField(max_length=3, blank=True)
-#     voted_party_desc = models.CharField(max_length=60, blank=True)
+    id = models.BigIntegerField(primary_key=True)
+    ncid = models.CharField(max_length=12)
+    county_desc = models.CharField(max_length=20, blank=True)
+    voted_county_desc = models.CharField(max_length=60, blank=True)
+    election_date = models.DateField(null=True)
+    election_desc = models.CharField(max_length=230, blank=True)
+    election_type = models.CharField(max_length=20, blank=True)
+    election_year = models.SmallIntegerField(null=True)
+    voting_method = models.CharField(max_length=30, blank=True)
+    voted_party_cd = models.CharField(max_length=3, blank=True)
+    voted_party_desc = models.CharField(max_length=60, blank=True)
 
-#     class Meta:
-#         app_label = "ncsbe"
-#         db_table = "mv_voter_history"
-#         managed = False
+    class Meta:
+        managed = False
 
-#     def __str__(self) -> str:
-#         return f"{self.ncid} — {self.election_date}"
-
-
-# class MvElections(pgviews.MaterializedView):
-#     """
-#     Small lookup table of distinct elections with vote counts (~117 rows).
-#     Include verbatim in the agent system prompt so the model knows exactly
-#     which elections exist before writing any query.
-
-#     Multiple rows can share the same election_date (e.g. 10/08/2019 has 16
-#     distinct descriptions). Always filter by election_type or election_desc
-#     in addition to election_date to avoid double-counting.
-#     """
-
-#     concurrent_index = "id"
-
-#     sql = f"""
-#         SELECT
-#             ROW_NUMBER() OVER (ORDER BY election_lbl::date DESC, election_desc) AS id,
-#             election_lbl::date                   AS election_date,
-#             election_desc,
-#             {ELECTION_TYPE_CASE}                 AS election_type,
-#             date_part('year', election_lbl::date)::smallint AS election_year,
-#             COUNT(*)                             AS total_votes
-#         FROM ncvhis_statewide
-#         GROUP BY election_lbl, election_desc
-#         ORDER BY election_date DESC
-#     """
-
-#     id = models.BigIntegerField(primary_key=True)
-#     election_date = models.DateField(null=True)
-#     election_desc = models.CharField(max_length=230, blank=True)
-#     election_type = models.CharField(max_length=20, blank=True)
-#     election_year = models.SmallIntegerField(null=True)
-#     total_votes = models.BigIntegerField(null=True)
-
-#     class Meta:
-#         app_label = "ncsbe"
-#         db_table = "mv_elections"
-#         managed = False
-
-#     def __str__(self) -> str:
-#         return f"{self.election_date} — {self.election_desc}"
+    def __str__(self) -> str:
+        return f"{self.ncid} — {self.election_date}"
