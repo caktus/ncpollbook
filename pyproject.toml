@@ -67,3 +67,7 @@ DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+addopts = "-m 'not llm'"
+markers = [
+    "llm: evals that call a real LLM; skipped by default, run with -m llm",
+]

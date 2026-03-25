@@ -76,8 +76,14 @@ The agent has two tools:
 # Run development server
 uv run manage.py runserver
 
-# Run tests
+# Run tests (LLM evals skipped by default)
 uv run pytest
+
+# Run only LLM-judge evals (requires ollama or another local model running)
+uv run pytest -m llm
+
+# Run all tests including LLM evals
+uv run pytest -m ''
 
 # Run linters
 uv run pre-commit run --all-files
