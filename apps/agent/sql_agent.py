@@ -160,11 +160,18 @@ async def _run_sql_query(question: str) -> str:
         result = await sql_gen_agent.run(question, deps=deps)
         if isinstance(result.output, InvalidRequest):
             return f"Could not generate query: {result.output.error_message}"
-        logger.info("Running SQL: %s", result.output.sql_query)
+        sql = result.output.sql_query
+        explanation = result.output.explanation
+        logger.info("Running SQL: %s", sql)
         async with conn.cursor() as cur:
-            await cur.execute(result.output.sql_query)
+            await cur.execute(sql)
             rows = await cur.fetchall()
-            return _rows_to_markdown(cur.description, rows)
+            table = _rows_to_markdown(cur.description, rows)
+        parts = [f"```sql\n{sql}\n```"]
+        if explanation:
+            parts.append(explanation)
+        parts.append(table)
+        return "\n\n".join(parts)
 
 
 voter_toolset: FunctionToolset = FunctionToolset()

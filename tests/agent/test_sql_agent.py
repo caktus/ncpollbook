@@ -1,4 +1,5 @@
 import pytest
+from django.conf import settings
 
 from apps.agent.sql_agent import get_view_schema
 from apps.ncsbe.models import VoterEventView, VoterView
@@ -46,3 +47,24 @@ class TestGetViewSchema:
         schema = get_view_schema(VoterView)
         assert schema.startswith("CREATE TABLE")
         assert schema.endswith(");")
+
+
+class TestSettings:
+    def test_voter_reg_models_contains_primary_model(self):
+        assert settings.VOTER_REG_MODEL in settings.VOTER_REG_MODELS
+
+    def test_voter_reg_models_is_list(self):
+        assert isinstance(settings.VOTER_REG_MODELS, list)
+        assert len(settings.VOTER_REG_MODELS) >= 1
+
+    def test_voter_reg_model_derived_from_models_list(self, monkeypatch):
+        # When only VOTER_REG_MODELS is set, VOTER_REG_MODEL should pick the first entry.
+        monkeypatch.setenv("VOTER_REG_MODELS", "ollama:llama3.3,ollama:mistral")
+        monkeypatch.delenv("VOTER_REG_MODEL", raising=False)
+        from importlib import reload
+
+        import config.settings as s
+
+        reload(s)
+        assert s.VOTER_REG_MODEL == "ollama:llama3.3"
+        assert s.VOTER_REG_MODELS == ["ollama:llama3.3", "ollama:mistral"]

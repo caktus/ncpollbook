@@ -42,9 +42,18 @@ Data is cached in `scratch/data/` after the first download.
 An AI agent can query the `VoterView` and `VoterEventView` materialized views via natural language.
 
 ```bash
-# Set the LLM model (defaults to openai:gpt-4o)
+# Set via VOTER_REG_MODEL, or let VOTER_REG_MODELS drive the default (first entry wins).
+# If neither is set, defaults to openai:gpt-4o (requires $OPENAI_API_KEY).
+
+# OpenAI
 export VOTER_REG_MODEL=openai:gpt-4o
 export OPENAI_API_KEY=sk-...
+
+# Bedrock (no OPENAI_API_KEY needed)
+export VOTER_REG_MODELS=bedrock:openai.gpt-oss-20b-1:0
+
+# Multiple selectable models in the web UI; first entry is the default
+export VOTER_REG_MODELS=bedrock:openai.gpt-oss-20b-1:0,ollama:llama3.3
 
 # Start the web chat UI
 uv run uvicorn apps.agent.web:app --host 127.0.0.1 --port 7932
