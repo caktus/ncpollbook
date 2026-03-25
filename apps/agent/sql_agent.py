@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass
 from datetime import date
 
+import logfire
 import psycopg
 import pydantic_monty
 from django.conf import settings
@@ -19,6 +20,11 @@ from pydantic_ai import Agent, ModelRetry, RunContext
 from pydantic_ai.toolsets.function import FunctionToolset
 
 from apps.ncsbe.models import VoterEventView, VoterView
+
+# 'if-token-present' means nothing will be sent (and the example will work) if you don't have logfire configured
+logfire.configure(send_to_logfire="if-token-present")
+logfire.instrument_psycopg()
+logfire.instrument_pydantic_ai()
 
 logger = logging.getLogger(__name__)
 
