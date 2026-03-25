@@ -8,6 +8,8 @@ from apps.ncsbe.models import (
     # MvVoterRegistration,
     Voter,
     VoterEvent,
+    VoterEventView,
+    VoterView,
 )
 
 
@@ -39,6 +41,61 @@ class VoterEventAdmin(admin.ModelAdmin):
     list_filter = ("voting_method", "voted_party_cd", "county_desc")
     search_fields = ("ncid",)
     readonly_fields: ClassVar = [f.name for f in VoterEvent._meta.get_fields()]
+
+
+class ReadOnlyAdmin(admin.ModelAdmin):
+    """Base class for read-only admin views (e.g. materialized views)."""
+
+    def has_add_permission(self, request) -> bool:
+        return False
+
+    def has_change_permission(self, request, obj=None) -> bool:
+        return False
+
+    def has_delete_permission(self, request, obj=None) -> bool:
+        return False
+
+
+@admin.register(VoterView)
+class VoterViewAdmin(ReadOnlyAdmin):
+    # Avoid COUNT(*) on a large table for every page load
+    show_full_result_count = False
+    list_per_page = 50
+
+    list_display = (
+        "ncid",
+        "county_desc",
+        "status_cd",
+        "party_cd",
+        "gender_code",
+        "race_code",
+        "birth_year",
+        "registr_dt",
+    )
+    # Low-cardinality columns only — avoids expensive DISTINCT queries
+    list_filter = ("status_cd", "party_cd", "gender_code", "race_code")
+
+    # Exact-match lookup (= prefix) uses the unique index on ncid
+    search_fields = ("=ncid",)
+    readonly_fields: ClassVar = [f.name for f in VoterView._meta.get_fields()]
+
+
+@admin.register(VoterEventView)
+class VoterEventViewAdmin(ReadOnlyAdmin):
+    show_full_result_count = False
+    list_per_page = 50
+
+    list_display = (
+        "ncid",
+        "county_desc",
+        "election_date",
+        "election_type",
+        "voting_method",
+        "voted_party_cd",
+    )
+    list_filter = ("election_type", "election_year", "voting_method", "voted_party_cd")
+    # ncid is not indexed on this view — no search_fields to avoid seq scans
+    readonly_fields: ClassVar = [f.name for f in VoterEventView._meta.get_fields()]
 
 
 # @admin.register(MvVoterRegistration)
