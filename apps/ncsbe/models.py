@@ -203,20 +203,42 @@ class VoterView(pg.MaterializedView):
     """
 
     county_id = models.SmallIntegerField(null=True)
-    county_desc = models.CharField(max_length=15, blank=True)
+    county_desc = models.CharField(
+        max_length=15,
+        blank=True,
+        db_comment="County name: ALAMANCE, ALEXANDER, ALLEGHANY, ANSON, ASHE, AVERY, BEAUFORT, BERTIE, BLADEN, BRUNSWICK, BUNCOMBE, BURKE, CABARRUS, CALDWELL, CAMDEN, CARTERET, CASWELL, CATAWBA, CHATHAM, CHEROKEE ... (100 distinct)",
+    )
     precinct_abbrv = models.CharField(max_length=6, blank=True)
     precinct_desc = models.CharField(max_length=60, blank=True)
     cong_dist_abbrv = models.CharField(max_length=6, blank=True)
     nc_senate_abbrv = models.CharField(max_length=6, blank=True)
     nc_house_abbrv = models.CharField(max_length=6, blank=True)
     municipality_desc = models.CharField(max_length=60, blank=True)
-    ncid = models.CharField(max_length=12, primary_key=True)
-    status_cd = models.CharField(max_length=2, blank=True)
-    voter_status_desc = models.CharField(max_length=25, blank=True)
-    party_cd = models.CharField(max_length=3, blank=True)
-    gender_code = models.CharField(max_length=1, blank=True)
-    race_code = models.CharField(max_length=3, blank=True)
-    ethnic_code = models.CharField(max_length=3, blank=True)
+    ncid = models.CharField(
+        max_length=12,
+        primary_key=True,
+        db_comment="Unique voter ID; join to VoterEventView on ncid",
+    )
+    status_cd = models.CharField(max_length=2, blank=True, db_comment="A, D, I, R (4 distinct)")
+    voter_status_desc = models.CharField(
+        max_length=25, blank=True, db_comment="ACTIVE, DENIED, INACTIVE, REMOVED (4 distinct)"
+    )
+    party_cd = models.CharField(
+        max_length=3, blank=True, db_comment="Party affiliation e.g. DEM REP UNA LIB"
+    )
+    gender_code = models.CharField(
+        max_length=1, blank=True, db_comment="M=Male F=Female U=Undesignated"
+    )
+    race_code = models.CharField(
+        max_length=3,
+        blank=True,
+        db_comment="W=White B=Black A=Asian M=Multiracial O=Other I=Am.Indian U=Undesignated",
+    )
+    ethnic_code = models.CharField(
+        max_length=3,
+        blank=True,
+        db_comment="HL=Hispanic/Latino NL=Not Hispanic/Latino UN=Undesignated",
+    )
     birth_year = models.SmallIntegerField(null=True)
     age_at_year_end = models.SmallIntegerField(null=True)
     registr_dt = models.DateField(null=True)
@@ -269,15 +291,27 @@ class VoterEventView(pg.MaterializedView):
     """
 
     id = models.BigIntegerField(primary_key=True)
-    ncid = models.CharField(max_length=12)
+    ncid = models.CharField(max_length=12, db_comment="Voter ID; join to VoterView on ncid")
     county_desc = models.CharField(max_length=20, blank=True)
     voted_county_desc = models.CharField(max_length=60, blank=True)
     election_date = models.DateField(null=True)
     election_desc = models.CharField(max_length=230, blank=True)
-    election_type = models.CharField(max_length=20, blank=True)
+    election_type = models.CharField(
+        max_length=20,
+        blank=True,
+        db_comment="PRIMARY SECOND_PRIMARY GENERAL RUNOFF MUNICIPAL SPECIAL OTHER — derived from election_desc",
+    )
     election_year = models.SmallIntegerField(null=True)
-    voting_method = models.CharField(max_length=30, blank=True)
-    voted_party_cd = models.CharField(max_length=3, blank=True)
+    voting_method = models.CharField(
+        max_length=30,
+        blank=True,
+        db_comment="Exclude ELIGIBLE DID NOT VOTE and TRANSFER when computing turnout",
+    )
+    voted_party_cd = models.CharField(
+        max_length=3,
+        blank=True,
+        db_comment="Party voted in; empty string values exist — label explicitly when grouping",
+    )
     voted_party_desc = models.CharField(max_length=60, blank=True)
 
     class Meta:

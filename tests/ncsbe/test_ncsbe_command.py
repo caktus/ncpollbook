@@ -1,7 +1,13 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
+from click.testing import CliRunner
+from django.core.management import load_command_class
+
 from apps.ncsbe.etl.loader import elapsed_timer, load_history_file, load_voter_file
-from apps.ncsbe.management.commands.ncsbe import peek_file
+from apps.ncsbe.management.commands.ncsbe import _distinct_values, peek_file
+from apps.ncsbe.models import VoterView
+from tests.ncsbe.factories import VoterFactory
 
 
 class TestPeekFile:
@@ -74,3 +80,37 @@ class TestLoadTiming:
         with patch("apps.ncsbe.etl.loader._get_psycopg_conn", return_value=mock_conn):
             count = load_history_file(tsv)
         assert count == 99
+
+
+@pytest.mark.django_db
+class TestDistinctValues:
+    def test_lists_distinct_values(self):
+        VoterFactory(status_cd="A")
+        VoterFactory(status_cd="I")
+        VoterView.refresh()
+        result = _distinct_values(VoterView, "status_cd", max_values=20)
+        assert "A" in result
+        assert "I" in result
+        assert ", " in result
+
+    def test_truncates_when_over_max(self):
+        for i in range(5):
+            VoterFactory(party_cd=f"P{i}")
+        VoterView.refresh()
+        result = _distinct_values(VoterView, "party_cd", max_values=3)
+        assert "distinct" in result
+        assert "..." in result
+
+
+@pytest.mark.django_db
+class TestCommentsCommand:
+    def test_outputs_column_names_for_both_views(self):
+        VoterFactory()
+        VoterView.refresh()
+        cmd = load_command_class("apps.ncsbe", "ncsbe")
+        result = CliRunner().invoke(cmd, ["comments"])
+        assert result.exit_code == 0, result.output
+        assert "VoterView" in result.output
+        assert "VoterEventView" in result.output
+        assert "status_cd" in result.output
+        assert "election_type" in result.output

@@ -51,7 +51,8 @@ def get_view_schema(model_class: type) -> str:
         sql_type = _DJANGO_TO_SQL.get(field.get_internal_type(), "text")
         nullable = "NULL" if field.null else "NOT NULL"
         comma = "," if i < len(fields) - 1 else ""
-        lines.append(f"    {field.column} {sql_type} {nullable}{comma}")
+        comment = f"  -- {field.db_comment}" if field.db_comment else ""
+        lines.append(f"    {field.column} {sql_type} {nullable}{comma}{comment}")
     lines.append(");")
     return "\n".join(lines)
 

@@ -5,6 +5,7 @@ Usage:
     uv run manage.py ncsbe etl                  # download, load, and refresh views
     uv run manage.py ncsbe etl --refresh-only   # only refresh materialized views
     uv run manage.py ncsbe peek                 # inspect first 100 rows of each file
+    uv run manage.py ncsbe comments             # print suggested db_comment values for view columns
 """
 
 from pathlib import Path
@@ -98,3 +99,31 @@ def peek_file(path: Path, n_rows: int = 100) -> list[tuple[str, str, list[str]]]
         (col, str(df[col].dtype), df[col].drop_nulls().cast(pl.String).head(3).to_list())
         for col in df.columns
     ]
+
+
+def _distinct_values(model_cls: type, col: str, max_values: int) -> str:
+    """Return a compact string of distinct values for a column, for use as db_comment."""
+    qs = model_cls.objects.values_list(col, flat=True).distinct()
+    total = qs.count()
+    raw = [str(v) if v != "" else "(empty)" for v in qs[:max_values] if v is not None]
+    values = ", ".join(raw)
+    if total > max_values:
+        return f"{values} ... ({total} distinct)"
+    return f"{values} ({total} distinct)"
+
+
+@command.command()
+@click.option(
+    "--max-values", default=20, show_default=True, help="Max distinct values to list per column."
+)
+def comments(max_values: int) -> None:
+    """Print suggested db_comment values based on distinct column values in the views.
+
+    Output can be copy-pasted as db_comment= kwargs into model field definitions.
+    """
+    for model_cls in (VoterView, VoterEventView):
+        click.secho(f"\n=== {model_cls.__name__} ===", bold=True)
+        for field in model_cls._meta.fields:
+            col = field.column
+            suggestion = _distinct_values(model_cls, col, max_values)
+            click.echo(f"  {col:<30} db_comment={suggestion!r}")

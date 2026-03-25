@@ -48,6 +48,23 @@ class TestGetViewSchema:
         assert schema.startswith("CREATE TABLE")
         assert schema.endswith(");")
 
+    def test_voter_schema_includes_db_comments(self):
+        schema = get_view_schema(VoterView)
+        # Fields with db_comment should appear as inline SQL comments
+        assert "-- A=ACTIVE" in schema
+        assert "-- Party affiliation" in schema
+
+    def test_voter_event_schema_includes_db_comments(self):
+        schema = get_view_schema(VoterEventView)
+        assert "-- PRIMARY SECOND_PRIMARY" in schema
+        assert "-- Exclude ELIGIBLE DID NOT VOTE" in schema
+
+    def test_fields_without_db_comment_have_no_comment(self):
+        schema = get_view_schema(VoterView)
+        # county_desc has no db_comment — its line should not contain '--'
+        line = next(row for row in schema.splitlines() if "county_desc" in row)
+        assert "--" not in line
+
 
 class TestSettings:
     def test_voter_reg_models_contains_primary_model(self):
