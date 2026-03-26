@@ -5,6 +5,8 @@ Usage:
     uv run manage.py agent prompts                  # print all agent system prompts
     uv run manage.py agent prompts --name sql_gen   # print only the sql_gen_agent prompt
     uv run manage.py agent prompts --name voter     # print only the voter_agent prompt
+    uv run manage.py agent cli                      # launch the interactive CLI
+    uv run manage.py agent cli -q "..."            # ask a single question and exit
 """
 
 import asyncio
@@ -37,3 +39,13 @@ def prompts(name: str | None) -> None:
             click.echo()
         click.secho("=== voter_agent instructions ===", bold=True)
         click.echo("\n".join(voter_agent._instructions))
+
+
+@command.command()
+@click.option("--question", "-q", default=None, help="Ask a single question and exit.")
+@click.pass_context
+def cli(ctx: click.Context, question: str | None) -> None:
+    """Launch the interactive voter data agent CLI."""
+    from apps.agent.cli import main as _cli_main
+
+    ctx.invoke(_cli_main, question=question)

@@ -30,3 +30,9 @@ class TestAgentPromptsCommand:
         output = _invoke(["prompts", "--name", "voter"])
         assert "voter data analyst" in output
         assert "sql_gen_agent" not in output
+
+
+class TestAgentCliCommand:
+    def test_cli_help(self):
+        output = _invoke(["cli", "--help"])
+        assert "question" in output

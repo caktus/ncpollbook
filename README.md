@@ -62,6 +62,31 @@ uv run uvicorn apps.agent.web:app --host 127.0.0.1 --port 7932
 
 Then open [http://127.0.0.1:7932](http://127.0.0.1:7932) in your browser.
 
+## SQL Agent (CLI)
+
+A terminal alternative to the web UI with step-by-step output and a per-run summary of model
+response time, tool execution time, and tokens/second.
+
+```bash
+# Interactive mode — type questions at the prompt, quit to exit
+uv run manage.py agent cli
+
+# Single question mode
+uv run manage.py agent cli -q "how many active voters are in Durham County?"
+
+# Inspect agent system prompts
+uv run manage.py agent prompts
+uv run manage.py agent prompts --name sql_gen
+uv run manage.py agent prompts --name voter
+```
+
+Each run prints:
+- **Thinking** panels — the model's internal reasoning (when supported by the model)
+- **→ tool_name(args)** — each tool call as it is issued
+- **↩ tool result** — a truncated preview of each tool response
+- **Answer** — the final markdown answer
+- **Run summary** table — step name, elapsed time, input/output tokens, and tokens/second
+
 Sample questions:
 - How many people are registered to vote in Durham County?
 - What is the breakdown of party affiliation among voters aged 18–25 vs 65+?
