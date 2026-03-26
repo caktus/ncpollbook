@@ -51,8 +51,9 @@ class TestGetViewSchema:
     def test_voter_schema_includes_db_comments(self):
         schema = get_view_schema(VoterView)
         # Fields with db_comment should appear as inline SQL comments
-        assert "-- A=ACTIVE" in schema
+        assert "-- A, D, I, R" in schema
         assert "-- Party affiliation" in schema
+        assert "-- County name:" in schema
 
     def test_voter_event_schema_includes_db_comments(self):
         schema = get_view_schema(VoterEventView)
@@ -61,8 +62,8 @@ class TestGetViewSchema:
 
     def test_fields_without_db_comment_have_no_comment(self):
         schema = get_view_schema(VoterView)
-        # county_desc has no db_comment — its line should not contain '--'
-        line = next(row for row in schema.splitlines() if "county_desc" in row)
+        # precinct_abbrv has no db_comment — its line should not contain '--'
+        line = next(row for row in schema.splitlines() if "precinct_abbrv" in row)
         assert "--" not in line
 
 

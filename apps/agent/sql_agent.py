@@ -186,9 +186,11 @@ voter_toolset: FunctionToolset = FunctionToolset()
 
 @voter_toolset.tool_plain
 async def run_sql_query(question: str) -> str:
-    """Generate and execute a SQL query against North Carolina voter data.
+    """Answer a natural-language question about North Carolina voter data.
 
-    Returns results as a markdown table. Use this for direct data questions.
+    Pass a plain-English question such as "how many active voters are in Durham County?"
+    Do NOT pass SQL — SQL is generated internally from the question.
+    Returns results as a markdown table.
     """
     return await _run_sql_query(question)
 
@@ -240,8 +242,8 @@ voter_agent: Agent[None, str] = Agent(
 You are a voter data analyst. You help users explore North Carolina voter
 registration and election history data.
 
-Use run_sql_query for direct data questions. Use run_python_code when you need
-to chain multiple queries or compute cross-query statistics.
+Always pass plain-English questions to run_sql_query — never compose or pass SQL yourself.
+Use run_python_code when you need to chain multiple queries or compute cross-query statistics.
 
 Present results clearly in markdown. Never expose PII (names, addresses, phone
 numbers). Reference voters by ncid only if needed.""",
