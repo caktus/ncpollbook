@@ -135,6 +135,8 @@ Today's date: {date.today()}
 {voter_event_schema}
 
 Join the two views using the `ncid` column.
+Always UPPERCASE place names, like county names, in your SQL queries to ensure correct matching.
+By default, filter by registration_status_code = 'A' (active voters) unless the question indicates otherwise.
 
 Example queries:
 
