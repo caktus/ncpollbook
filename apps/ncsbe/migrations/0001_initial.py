@@ -18,76 +18,409 @@ class Migration(migrations.Migration):
                         auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
                     ),
                 ),
-                ("county_id", models.CharField(blank=True, max_length=10)),
-                ("county_desc", models.CharField(blank=True, max_length=15)),
-                ("voter_reg_num", models.CharField(blank=True, max_length=12)),
-                ("ncid", models.CharField(blank=True, max_length=12)),
-                ("last_name", models.CharField(blank=True, max_length=25)),
-                ("first_name", models.CharField(blank=True, max_length=20)),
-                ("middle_name", models.CharField(blank=True, max_length=20)),
-                ("name_suffix_lbl", models.CharField(blank=True, max_length=10)),
-                ("status_cd", models.CharField(blank=True, max_length=2)),
-                ("voter_status_desc", models.CharField(blank=True, max_length=25)),
-                ("reason_cd", models.CharField(blank=True, max_length=2)),
-                ("voter_status_reason_desc", models.CharField(blank=True, max_length=60)),
-                ("res_street_address", models.CharField(blank=True, max_length=65)),
-                ("res_city_desc", models.CharField(blank=True, max_length=60)),
-                ("state_cd", models.CharField(blank=True, max_length=2)),
-                ("zip_code", models.CharField(blank=True, max_length=9)),
-                ("mail_addr1", models.CharField(blank=True, max_length=40)),
-                ("mail_addr2", models.CharField(blank=True, max_length=40)),
-                ("mail_addr3", models.CharField(blank=True, max_length=40)),
-                ("mail_addr4", models.CharField(blank=True, max_length=40)),
-                ("mail_city", models.CharField(blank=True, max_length=30)),
-                ("mail_state", models.CharField(blank=True, max_length=2)),
-                ("mail_zipcode", models.CharField(blank=True, max_length=9)),
-                ("full_phone_number", models.CharField(blank=True, max_length=12)),
-                ("confidential_ind", models.CharField(blank=True, max_length=1)),
-                ("registr_dt", models.CharField(blank=True, max_length=10)),
-                ("race_code", models.CharField(blank=True, max_length=3)),
-                ("ethnic_code", models.CharField(blank=True, max_length=3)),
-                ("party_cd", models.CharField(blank=True, max_length=3)),
-                ("gender_code", models.CharField(blank=True, max_length=1)),
-                ("birth_year", models.CharField(blank=True, max_length=4)),
-                ("age_at_year_end", models.CharField(blank=True, max_length=3)),
-                ("birth_state", models.CharField(blank=True, max_length=2)),
-                ("drivers_lic", models.CharField(blank=True, max_length=1)),
-                ("ssn", models.CharField(blank=True, max_length=1)),
-                ("no_dl_ssn_chkbx", models.CharField(blank=True, max_length=1)),
-                ("hava_id_req", models.CharField(blank=True, max_length=1)),
-                ("precinct_abbrv", models.CharField(blank=True, max_length=6)),
-                ("precinct_desc", models.CharField(blank=True, max_length=60)),
-                ("municipality_abbrv", models.CharField(blank=True, max_length=6)),
-                ("municipality_desc", models.CharField(blank=True, max_length=60)),
-                ("ward_abbrv", models.CharField(blank=True, max_length=6)),
-                ("ward_desc", models.CharField(blank=True, max_length=60)),
-                ("cong_dist_abbrv", models.CharField(blank=True, max_length=6)),
-                ("super_court_abbrv", models.CharField(blank=True, max_length=6)),
-                ("judic_dist_abbrv", models.CharField(blank=True, max_length=6)),
-                ("nc_senate_abbrv", models.CharField(blank=True, max_length=6)),
-                ("nc_house_abbrv", models.CharField(blank=True, max_length=6)),
-                ("county_commiss_abbrv", models.CharField(blank=True, max_length=6)),
-                ("county_commiss_desc", models.CharField(blank=True, max_length=60)),
-                ("township_abbrv", models.CharField(blank=True, max_length=6)),
-                ("township_desc", models.CharField(blank=True, max_length=60)),
-                ("school_dist_abbrv", models.CharField(blank=True, max_length=6)),
-                ("school_dist_desc", models.CharField(blank=True, max_length=60)),
-                ("fire_dist_abbrv", models.CharField(blank=True, max_length=6)),
-                ("fire_dist_desc", models.CharField(blank=True, max_length=60)),
-                ("water_dist_abbrv", models.CharField(blank=True, max_length=6)),
-                ("water_dist_desc", models.CharField(blank=True, max_length=60)),
-                ("sewer_dist_abbrv", models.CharField(blank=True, max_length=6)),
-                ("sewer_dist_desc", models.CharField(blank=True, max_length=60)),
-                ("sanit_dist_abbrv", models.CharField(blank=True, max_length=6)),
-                ("sanit_dist_desc", models.CharField(blank=True, max_length=60)),
-                ("rescue_dist_abbrv", models.CharField(blank=True, max_length=6)),
-                ("rescue_dist_desc", models.CharField(blank=True, max_length=60)),
-                ("munic_dist_abbrv", models.CharField(blank=True, max_length=6)),
-                ("munic_dist_desc", models.CharField(blank=True, max_length=60)),
-                ("dist_1_abbrv", models.CharField(blank=True, max_length=6)),
-                ("dist_1_desc", models.CharField(blank=True, max_length=60)),
-                ("vtd_abbrv", models.CharField(blank=True, max_length=6)),
-                ("vtd_desc", models.CharField(blank=True, max_length=60)),
+                (
+                    "county_id",
+                    models.CharField(
+                        blank=True, max_length=10, verbose_name="County identification number"
+                    ),
+                ),
+                (
+                    "county_desc",
+                    models.CharField(blank=True, max_length=15, verbose_name="County name"),
+                ),
+                (
+                    "voter_reg_num",
+                    models.CharField(
+                        blank=True, max_length=12, verbose_name="Voter registration number"
+                    ),
+                ),
+                (
+                    "ncid",
+                    models.CharField(
+                        blank=True,
+                        max_length=12,
+                        verbose_name="North Carolina identification number; join key",
+                    ),
+                ),
+                (
+                    "last_name",
+                    models.CharField(blank=True, max_length=25, verbose_name="Voter last name"),
+                ),
+                (
+                    "first_name",
+                    models.CharField(blank=True, max_length=20, verbose_name="Voter first name"),
+                ),
+                (
+                    "middle_name",
+                    models.CharField(blank=True, max_length=20, verbose_name="Voter middle name"),
+                ),
+                (
+                    "name_suffix_lbl",
+                    models.CharField(blank=True, max_length=10, verbose_name="Voter suffix name"),
+                ),
+                (
+                    "status_cd",
+                    models.CharField(
+                        blank=True, max_length=2, verbose_name="Registration status code"
+                    ),
+                ),
+                (
+                    "voter_status_desc",
+                    models.CharField(
+                        blank=True, max_length=25, verbose_name="Registration status description"
+                    ),
+                ),
+                (
+                    "reason_cd",
+                    models.CharField(
+                        blank=True, max_length=2, verbose_name="Registration status reason code"
+                    ),
+                ),
+                (
+                    "voter_status_reason_desc",
+                    models.CharField(
+                        blank=True,
+                        max_length=60,
+                        verbose_name="Registration status reason description",
+                    ),
+                ),
+                (
+                    "res_street_address",
+                    models.CharField(
+                        blank=True, max_length=65, verbose_name="Residential street address"
+                    ),
+                ),
+                (
+                    "res_city_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="Residential city name"
+                    ),
+                ),
+                (
+                    "state_cd",
+                    models.CharField(
+                        blank=True, max_length=2, verbose_name="Residential address state code"
+                    ),
+                ),
+                (
+                    "zip_code",
+                    models.CharField(
+                        blank=True, max_length=9, verbose_name="Residential address zip code"
+                    ),
+                ),
+                (
+                    "mail_addr1",
+                    models.CharField(
+                        blank=True, max_length=40, verbose_name="Mailing address line 1"
+                    ),
+                ),
+                (
+                    "mail_addr2",
+                    models.CharField(
+                        blank=True, max_length=40, verbose_name="Mailing address line 2"
+                    ),
+                ),
+                (
+                    "mail_addr3",
+                    models.CharField(
+                        blank=True, max_length=40, verbose_name="Mailing address line 3"
+                    ),
+                ),
+                (
+                    "mail_addr4",
+                    models.CharField(
+                        blank=True, max_length=40, verbose_name="Mailing address line 4"
+                    ),
+                ),
+                (
+                    "mail_city",
+                    models.CharField(
+                        blank=True, max_length=30, verbose_name="Mailing address city name"
+                    ),
+                ),
+                (
+                    "mail_state",
+                    models.CharField(
+                        blank=True, max_length=2, verbose_name="Mailing address city code"
+                    ),
+                ),
+                (
+                    "mail_zipcode",
+                    models.CharField(
+                        blank=True, max_length=9, verbose_name="Mailing address zip code"
+                    ),
+                ),
+                (
+                    "full_phone_number",
+                    models.CharField(
+                        blank=True,
+                        max_length=12,
+                        verbose_name="Full phone number including area code",
+                    ),
+                ),
+                (
+                    "confidential_ind",
+                    models.CharField(
+                        blank=True, max_length=1, verbose_name="Confidential indicator"
+                    ),
+                ),
+                (
+                    "registr_dt",
+                    models.CharField(blank=True, max_length=10, verbose_name="Registration date"),
+                ),
+                ("race_code", models.CharField(blank=True, max_length=3, verbose_name="Race code")),
+                (
+                    "ethnic_code",
+                    models.CharField(blank=True, max_length=3, verbose_name="Ethnicity code"),
+                ),
+                (
+                    "party_cd",
+                    models.CharField(
+                        blank=True, max_length=3, verbose_name="Registered party code"
+                    ),
+                ),
+                (
+                    "gender_code",
+                    models.CharField(blank=True, max_length=1, verbose_name="Gender/sex code"),
+                ),
+                (
+                    "birth_year",
+                    models.CharField(blank=True, max_length=4, verbose_name="Year of birth"),
+                ),
+                (
+                    "age_at_year_end",
+                    models.CharField(
+                        blank=True, max_length=3, verbose_name="Age at end of the year"
+                    ),
+                ),
+                (
+                    "birth_state",
+                    models.CharField(blank=True, max_length=2, verbose_name="Birth state"),
+                ),
+                (
+                    "drivers_lic",
+                    models.CharField(blank=True, max_length=1, verbose_name="Drivers license"),
+                ),
+                (
+                    "ssn",
+                    models.CharField(
+                        blank=True, max_length=1, verbose_name="Last four of Social Security Number"
+                    ),
+                ),
+                (
+                    "no_dl_ssn_chkbx",
+                    models.CharField(
+                        blank=True,
+                        max_length=1,
+                        verbose_name="Voter checked box indicating they do not have DL or SSN number",
+                    ),
+                ),
+                (
+                    "hava_id_req",
+                    models.CharField(
+                        blank=True, max_length=1, verbose_name="HAVA identification required"
+                    ),
+                ),
+                (
+                    "precinct_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Precinct abbreviation"
+                    ),
+                ),
+                (
+                    "precinct_desc",
+                    models.CharField(blank=True, max_length=60, verbose_name="Precinct name"),
+                ),
+                (
+                    "municipality_abbrv",
+                    models.CharField(
+                        blank=True,
+                        max_length=6,
+                        verbose_name="Municipality jurisdiction abbreviation",
+                    ),
+                ),
+                (
+                    "municipality_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="Municipality jurisdiction name"
+                    ),
+                ),
+                (
+                    "ward_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Ward jurisdiction abbreviation"
+                    ),
+                ),
+                (
+                    "ward_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="Ward jurisdiction name"
+                    ),
+                ),
+                (
+                    "cong_dist_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Congressional district abbreviation"
+                    ),
+                ),
+                (
+                    "super_court_abbrv",
+                    models.CharField(
+                        blank=True,
+                        max_length=6,
+                        verbose_name="Superior court jurisdiction abbreviation",
+                    ),
+                ),
+                (
+                    "judic_dist_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Judicial district abbreviation"
+                    ),
+                ),
+                (
+                    "nc_senate_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="NC Senate jurisdiction abbreviation"
+                    ),
+                ),
+                (
+                    "nc_house_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="NC House jurisdiction abbreviation"
+                    ),
+                ),
+                (
+                    "county_commiss_abbrv",
+                    models.CharField(
+                        blank=True,
+                        max_length=6,
+                        verbose_name="County commissioner jurisdiction abbreviation",
+                    ),
+                ),
+                (
+                    "county_commiss_desc",
+                    models.CharField(
+                        blank=True,
+                        max_length=60,
+                        verbose_name="County commissioner jurisdiction name",
+                    ),
+                ),
+                (
+                    "township_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Township jurisdiction abbreviation"
+                    ),
+                ),
+                (
+                    "township_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="Township jurisdiction name"
+                    ),
+                ),
+                (
+                    "school_dist_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="School district abbreviation"
+                    ),
+                ),
+                (
+                    "school_dist_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="School district name"
+                    ),
+                ),
+                (
+                    "fire_dist_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Fire district abbreviation"
+                    ),
+                ),
+                (
+                    "fire_dist_desc",
+                    models.CharField(blank=True, max_length=60, verbose_name="Fire district name"),
+                ),
+                (
+                    "water_dist_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Water district abbreviation"
+                    ),
+                ),
+                (
+                    "water_dist_desc",
+                    models.CharField(blank=True, max_length=60, verbose_name="Water district name"),
+                ),
+                (
+                    "sewer_dist_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Sewer district abbreviation"
+                    ),
+                ),
+                (
+                    "sewer_dist_desc",
+                    models.CharField(blank=True, max_length=60, verbose_name="Sewer district name"),
+                ),
+                (
+                    "sanit_dist_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Sanitation district abbreviation"
+                    ),
+                ),
+                (
+                    "sanit_dist_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="Sanitation district name"
+                    ),
+                ),
+                (
+                    "rescue_dist_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Rescue district abbreviation"
+                    ),
+                ),
+                (
+                    "rescue_dist_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="Rescue district name"
+                    ),
+                ),
+                (
+                    "munic_dist_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Municipal district abbreviation"
+                    ),
+                ),
+                (
+                    "munic_dist_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="Municipal district name"
+                    ),
+                ),
+                (
+                    "dist_1_abbrv",
+                    models.CharField(
+                        blank=True, max_length=6, verbose_name="Prosecutorial district abbreviation"
+                    ),
+                ),
+                (
+                    "dist_1_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="Prosecutorial district name"
+                    ),
+                ),
+                (
+                    "vtd_abbrv",
+                    models.CharField(
+                        blank=True,
+                        max_length=6,
+                        verbose_name="Voter tabulation district abbreviation",
+                    ),
+                ),
+                (
+                    "vtd_desc",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="Voter tabulation district name"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
@@ -99,21 +432,100 @@ class Migration(migrations.Migration):
                         auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
                     ),
                 ),
-                ("county_id", models.CharField(blank=True, max_length=10)),
-                ("county_desc", models.CharField(blank=True, max_length=20)),
-                ("voter_reg_num", models.CharField(blank=True, max_length=12)),
-                ("election_lbl", models.CharField(blank=True, max_length=10)),
-                ("election_desc", models.CharField(blank=True, max_length=230)),
-                ("voting_method", models.CharField(blank=True, max_length=30)),
-                ("voted_party_cd", models.CharField(blank=True, max_length=3)),
-                ("voted_party_desc", models.CharField(blank=True, max_length=60)),
-                ("pct_label", models.CharField(blank=True, max_length=6)),
-                ("pct_description", models.CharField(blank=True, max_length=60)),
-                ("ncid", models.CharField(blank=True, max_length=12)),
-                ("voted_county_id", models.CharField(blank=True, max_length=3)),
-                ("voted_county_desc", models.CharField(blank=True, max_length=60)),
-                ("vtd_label", models.CharField(blank=True, max_length=6)),
-                ("vtd_description", models.CharField(blank=True, max_length=60)),
+                (
+                    "county_id",
+                    models.CharField(
+                        blank=True, max_length=10, verbose_name="County identification number"
+                    ),
+                ),
+                (
+                    "county_desc",
+                    models.CharField(blank=True, max_length=20, verbose_name="County name"),
+                ),
+                (
+                    "voter_reg_num",
+                    models.CharField(
+                        blank=True, max_length=12, verbose_name="Voter registration number"
+                    ),
+                ),
+                (
+                    "election_lbl",
+                    models.CharField(blank=True, max_length=10, verbose_name="Election date label"),
+                ),
+                (
+                    "election_desc",
+                    models.CharField(
+                        blank=True, max_length=230, verbose_name="Election description"
+                    ),
+                ),
+                (
+                    "voting_method",
+                    models.CharField(blank=True, max_length=30, verbose_name="Voting method"),
+                ),
+                (
+                    "voted_party_cd",
+                    models.CharField(blank=True, max_length=3, verbose_name="Voted party code"),
+                ),
+                (
+                    "voted_party_desc",
+                    models.CharField(blank=True, max_length=60, verbose_name="Voted party name"),
+                ),
+                (
+                    "pct_label",
+                    models.CharField(
+                        blank=True,
+                        help_text="Precinct code for voter at time of election (see election_lbl)",
+                        max_length=6,
+                    ),
+                ),
+                (
+                    "pct_description",
+                    models.CharField(
+                        blank=True,
+                        help_text="Precinct name for voter at time of election (see election_lbl)",
+                        max_length=60,
+                    ),
+                ),
+                (
+                    "ncid",
+                    models.CharField(
+                        blank=True,
+                        max_length=12,
+                        verbose_name="North Carolina identification number; join key",
+                    ),
+                ),
+                (
+                    "voted_county_id",
+                    models.CharField(
+                        blank=True,
+                        help_text="The county id number in which the voter voted in the election (see election_lbl)",
+                        max_length=3,
+                    ),
+                ),
+                (
+                    "voted_county_desc",
+                    models.CharField(
+                        blank=True,
+                        help_text="The county name in which the voter voted in the election (see election_lbl)",
+                        max_length=60,
+                    ),
+                ),
+                (
+                    "vtd_label",
+                    models.CharField(
+                        blank=True,
+                        help_text="Voter tabulation district label for voter at time of election (see election_lbl)",
+                        max_length=6,
+                    ),
+                ),
+                (
+                    "vtd_description",
+                    models.CharField(
+                        blank=True,
+                        help_text="Voter tabulation district name for voter at time of election (see election_lbl)",
+                        max_length=60,
+                    ),
+                ),
             ],
         ),
     ]

@@ -17,6 +17,7 @@ export DATABASE_URL=postgresql://user:password@localhost:5432/yourdb
 
 # Apply migrations
 uv run manage.py migrate
+uv run manage.py sync_pgviews
 
 # Create superuser (optional)
 uv run manage.py createsuperuser

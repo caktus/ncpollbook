@@ -9,9 +9,9 @@ class TestGetViewSchema:
     def test_voter_schema_contains_key_fields(self):
         schema = get_view_schema(VoterView)
         assert "ncid" in schema
-        assert "party_cd" in schema
-        assert "status_cd" in schema
-        assert "county_desc" in schema
+        assert "registered_party_code" in schema
+        assert "registration_status_code" in schema
+        assert "county_name" in schema
 
     def test_voter_event_schema_contains_key_fields(self):
         schema = get_view_schema(VoterEventView)
@@ -36,11 +36,11 @@ class TestGetViewSchema:
 
     def test_voter_schema_types(self):
         schema = get_view_schema(VoterView)
-        # birth_year and age_at_year_end are SmallIntegerField
-        assert "birth_year smallint" in schema
-        assert "age_at_year_end smallint" in schema
-        # registr_dt is DateField
-        assert "registr_dt date" in schema
+        # year_of_birth and age_at_end_of_year are SmallIntegerField
+        assert "year_of_birth smallint" in schema
+        assert "age_at_end_of_year smallint" in schema
+        # registration_date is DateField
+        assert "registration_date date" in schema
 
     @pytest.mark.django_db
     def test_get_view_schema_is_valid_sql_structure(self):
@@ -51,19 +51,19 @@ class TestGetViewSchema:
     def test_voter_schema_includes_db_comments(self):
         schema = get_view_schema(VoterView)
         # Fields with db_comment should appear as inline SQL comments
-        assert "-- A, D, I, R" in schema
-        assert "-- Party affiliation" in schema
+        assert "-- A=ACTIVE" in schema
+        assert "-- Party affiliation:" in schema
         assert "-- County name:" in schema
 
     def test_voter_event_schema_includes_db_comments(self):
         schema = get_view_schema(VoterEventView)
-        assert "-- PRIMARY SECOND_PRIMARY" in schema
-        assert "-- Exclude ELIGIBLE DID NOT VOTE" in schema
+        assert "-- GENERAL," in schema
+        assert "-- ABSENTEE," in schema
 
     def test_fields_without_db_comment_have_no_comment(self):
         schema = get_view_schema(VoterView)
-        # precinct_abbrv has no db_comment — its line should not contain '--'
-        line = next(row for row in schema.splitlines() if "precinct_abbrv" in row)
+        # year_of_birth has no db_comment — its line should not contain '--'
+        line = next(row for row in schema.splitlines() if "year_of_birth" in row)
         assert "--" not in line
 
 

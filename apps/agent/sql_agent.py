@@ -134,11 +134,7 @@ Today's date: {date.today()}
 {voter_event_schema}
 
 Join the two views using the `ncid` column.
-
-VoterView status codes: A=ACTIVE, D=DENIED, I=INACTIVE, R=REMOVED, S=TEMPORARY
-VoterEventView election_type values: PRIMARY, SECOND_PRIMARY, GENERAL, RUNOFF, MUNICIPAL, SPECIAL, OTHER
-VoterEventView voting_method: exclude 'ELIGIBLE DID NOT VOTE' and 'TRANSFER' when computing turnout.
-Empty voted_party_cd values exist; label them explicitly when grouping by party."""
+"""
 
 
 @sql_gen_agent.output_validator

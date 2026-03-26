@@ -106,8 +106,8 @@ class TestFullEtl:
         VoterView.refresh(concurrently=False)
 
         v = VoterView.objects.get(ncid="AA000020")
-        assert str(v.registr_dt) == "2005-03-15"
-        assert v.registr_year == 2005
+        assert str(v.registration_date) == "2005-03-15"
+        assert v.registration_year == 2005
 
         v2 = VoterView.objects.get(ncid="AA000021")
-        assert v2.registr_dt is None
+        assert v2.registration_date is None

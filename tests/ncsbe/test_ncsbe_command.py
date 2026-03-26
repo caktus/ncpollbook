@@ -88,7 +88,7 @@ class TestDistinctValues:
         VoterFactory(status_cd="A")
         VoterFactory(status_cd="I")
         VoterView.refresh()
-        result = _distinct_values(VoterView, "status_cd", max_values=20)
+        result = _distinct_values(VoterView, "registration_status_code", max_values=20)
         assert "A" in result
         assert "I" in result
         assert ", " in result
@@ -97,7 +97,7 @@ class TestDistinctValues:
         for i in range(5):
             VoterFactory(party_cd=f"P{i}")
         VoterView.refresh()
-        result = _distinct_values(VoterView, "party_cd", max_values=3)
+        result = _distinct_values(VoterView, "registered_party_code", max_values=3)
         assert "distinct" in result
         assert "..." in result
 
@@ -112,5 +112,5 @@ class TestCommentsCommand:
         assert result.exit_code == 0, result.output
         assert "VoterView" in result.output
         assert "VoterEventView" in result.output
-        assert "status_cd" in result.output
+        assert "registration_status_code" in result.output
         assert "election_type" in result.output

@@ -64,16 +64,21 @@ class VoterViewAdmin(ReadOnlyAdmin):
 
     list_display = (
         "ncid",
-        "county_desc",
-        "status_cd",
-        "party_cd",
-        "gender_code",
+        "county_name",
+        "registration_status_code",
+        "registered_party_code",
+        "gender_sex_code",
         "race_code",
-        "birth_year",
-        "registr_dt",
+        "year_of_birth",
+        "registration_date",
     )
     # Low-cardinality columns only — avoids expensive DISTINCT queries
-    list_filter = ("status_cd", "party_cd", "gender_code", "race_code")
+    list_filter = (
+        "registration_status_code",
+        "registered_party_code",
+        "gender_sex_code",
+        "race_code",
+    )
 
     # Exact-match lookup (= prefix) uses the unique index on ncid
     search_fields = ("=ncid",)
@@ -87,81 +92,12 @@ class VoterEventViewAdmin(ReadOnlyAdmin):
 
     list_display = (
         "ncid",
-        "county_desc",
+        "voted_county_desc",
         "election_date",
         "election_type",
         "voting_method",
-        "voted_party_cd",
+        "voted_party_name",
     )
-    list_filter = ("election_type", "election_year", "voting_method", "voted_party_cd")
+    list_filter = ("election_type", "election_year", "voting_method")
     # ncid is not indexed on this view — no search_fields to avoid seq scans
     readonly_fields: ClassVar = [f.name for f in VoterEventView._meta.get_fields()]
-
-
-# @admin.register(MvVoterRegistration)
-# class MvVoterRegistrationAdmin(admin.ModelAdmin):
-#     list_display = (
-#         "ncid",
-#         "county_desc",
-#         "status_cd",
-#         "party_cd",
-#         "gender_code",
-#         "race_code",
-#         "age_at_year_end",
-#     )
-#     list_filter = ("status_cd", "party_cd", "gender_code", "race_code", "county_desc")
-#     search_fields = ("ncid",)
-
-#     def has_add_permission(self, request):
-#         return False
-
-#     def has_change_permission(self, request, obj=None):
-#         return False
-
-#     def has_delete_permission(self, request, obj=None):
-#         return False
-
-
-# @admin.register(MvVoterHistory)
-# class MvVoterHistoryAdmin(admin.ModelAdmin):
-#     list_display = (
-#         "ncid",
-#         "county_desc",
-#         "election_date",
-#         "election_type",
-#         "voting_method",
-#         "voted_party_cd",
-#     )
-#     list_filter = ("election_type", "election_year", "voting_method", "voted_party_cd")
-#     search_fields = ("ncid",)
-
-#     def has_add_permission(self, request):
-#         return False
-
-#     def has_change_permission(self, request, obj=None):
-#         return False
-
-#     def has_delete_permission(self, request, obj=None):
-#         return False
-
-
-# @admin.register(MvElections)
-# class MvElectionsAdmin(admin.ModelAdmin):
-#     list_display = (
-#         "election_date",
-#         "election_type",
-#         "election_year",
-#         "election_desc",
-#         "total_votes",
-#     )
-#     list_filter = ("election_type", "election_year")
-#     search_fields = ("election_desc",)
-
-#     def has_add_permission(self, request):
-#         return False
-
-#     def has_change_permission(self, request, obj=None):
-#         return False
-
-#     def has_delete_permission(self, request, obj=None):
-#         return False
