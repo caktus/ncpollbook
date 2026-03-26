@@ -1,7 +1,9 @@
 import pytest
 from django.conf import settings
+from django.db import connection
 
 from apps.agent.sql_agent import get_view_schema
+from apps.agent.sql_examples import SQL_EXAMPLES
 from apps.ncsbe.models import VoterEventView, VoterView
 
 
@@ -65,6 +67,14 @@ class TestGetViewSchema:
         # year_of_birth has no db_comment — its line should not contain '--'
         line = next(row for row in schema.splitlines() if "year_of_birth" in row)
         assert "--" not in line
+
+
+class TestSqlExamples:
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("sql", SQL_EXAMPLES)
+    def test_example_is_syntactically_valid(self, sql):
+        with connection.cursor() as cursor:
+            cursor.execute(f"EXPLAIN {sql.rstrip(';').rstrip()}")
 
 
 class TestSettings:

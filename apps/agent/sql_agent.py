@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ModelRetry, RunContext
 from pydantic_ai.toolsets.function import FunctionToolset
 
+from apps.agent.sql_examples import SQL_EXAMPLES
 from apps.ncsbe.models import VoterEventView, VoterView
 
 # 'if-token-present' means nothing will be sent (and the example will work) if you don't have logfire configured
@@ -134,6 +135,10 @@ Today's date: {date.today()}
 {voter_event_schema}
 
 Join the two views using the `ncid` column.
+
+Example queries:
+
+{chr(10).join(SQL_EXAMPLES)}
 """
 
 
