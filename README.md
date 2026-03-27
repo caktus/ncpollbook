@@ -1,8 +1,10 @@
-# voter-reg
+# NC Pollbook
 
-Web application for importing and searching North Carolina voter registration and history data.
+NC Pollbook is a Django web app for importing, loading, and analyzing North Carolina State Board of Elections (NCSBE) voter registration and history data.
 
-Built with Django 6, PostgreSQL 18, and `django-pgviews-redux` for materialized views.
+It combines a Django/PostgreSQL ETL pipeline and materialized views with a Pydantic AI SQL agent that answers analytical questions over the voter dataset in CLI and web chat interfaces.
+
+Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialized views.
 
 ## Setup
 
