@@ -48,7 +48,9 @@ async def _run_question(question: str) -> None:
 
     status = Status("[cyan]Calling model…[/]", console=console, spinner="dots")
 
-    async with voter_agent.iter(question, model=get_tool_model(AgentTool.VOTER_AGENT)) as agent_run:
+    async with voter_agent.iter(
+        question, model=await get_tool_model(AgentTool.VOTER_AGENT)
+    ) as agent_run:
         async for node in agent_run:
             if isinstance(node, ModelRequestNode):
                 # Show tool results that arrived with this request

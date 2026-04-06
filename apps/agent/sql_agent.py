@@ -13,6 +13,7 @@ from datetime import date
 import logfire
 import psycopg
 import pydantic_monty
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.db import connection as django_connection
 from pydantic import BaseModel, Field
@@ -166,7 +167,7 @@ Example queries:
 """
 
 
-def get_tool_model(tool_name: str | None) -> str | OpenAIChatModel:
+async def get_tool_model(tool_name: str | None) -> str | OpenAIChatModel:
     """Return the model configured for a tool, falling back to settings.
 
     Lookup order:
@@ -174,13 +175,18 @@ def get_tool_model(tool_name: str | None) -> str | OpenAIChatModel:
     2. ToolModel with tool_name=NULL (default)
     3. settings.VOTER_REG_MODEL
     """
-    record = (
-        ToolModel.objects.filter(tool_name=tool_name).select_related("model").first()
-        or ToolModel.objects.filter(tool_name=None).select_related("model").first()
-    )
-    if record:
-        return resolve_model(record.model.name)
-    return resolve_model(settings.VOTER_REG_MODEL)
+
+    @sync_to_async
+    def _query() -> str | OpenAIChatModel:
+        record = (
+            ToolModel.objects.filter(tool_name=tool_name).select_related("model").first()
+            or ToolModel.objects.filter(tool_name=None).select_related("model").first()
+        )
+        if record:
+            return resolve_model(record.model.name)
+        return resolve_model(settings.VOTER_REG_MODEL)
+
+    return await _query()
 
 
 _DISALLOWED_STATEMENTS = {"INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE", "CREATE"}
@@ -219,7 +225,7 @@ async def _run_sql_query(question: str) -> str:
     async with await psycopg.AsyncConnection.connect(**_get_async_conninfo()) as conn:
         deps = SqlDeps(conn=conn)
         result = await sql_gen_agent.run(
-            question, deps=deps, model=get_tool_model(AgentTool.SQL_GEN)
+            question, deps=deps, model=await get_tool_model(AgentTool.SQL_GEN)
         )
         if isinstance(result.output, InvalidRequest):
             return f"Could not generate query: {result.output.error_message}"
