@@ -1,3 +1,4 @@
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -43,8 +44,6 @@ class TestElapsedTimer:
         assert t[0] >= 0
 
     def test_elapsed_increases_with_time(self):
-        import time
-
         with elapsed_timer() as t:
             time.sleep(0.01)
         assert t[0] >= 0.01

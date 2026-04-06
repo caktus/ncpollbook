@@ -13,6 +13,7 @@ import asyncio
 
 import djclick as click
 
+from apps.agent.cli import main as _cli_main
 from apps.agent.sql_agent import _sql_system_prompt, voter_agent
 
 
@@ -46,6 +47,4 @@ def prompts(name: str | None) -> None:
 @click.pass_context
 def cli(ctx: click.Context, question: str | None) -> None:
     """Launch the interactive voter data agent CLI."""
-    from apps.agent.cli import main as _cli_main
-
     ctx.invoke(_cli_main, question=question)

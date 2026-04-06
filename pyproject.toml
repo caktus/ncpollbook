@@ -47,6 +47,8 @@ select = [
     "SIM",  # flake8-simplify
     "DJ",   # flake8-django
     "RUF",  # ruff-specific rules
+    "PLC0415", # import-outside-top-level
+    "E402", # module-import-not-at-top-of-file
 ]
 ignore = [
     "E501",    # line too long (handled by formatter)

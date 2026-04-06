@@ -1,7 +1,10 @@
+from importlib import reload
+
 import pytest
 from django.conf import settings
 from django.db import connection
 
+import config.settings as s
 from apps.agent.sql_agent import get_view_schema
 from apps.agent.sql_examples import SQL_EXAMPLES
 from apps.ncsbe.models import VoterEventView, VoterView
@@ -89,10 +92,6 @@ class TestSettings:
         # When only VOTER_REG_MODELS is set, VOTER_REG_MODEL should pick the first entry.
         monkeypatch.setenv("VOTER_REG_MODELS", "ollama:llama3.3,ollama:mistral")
         monkeypatch.delenv("VOTER_REG_MODEL", raising=False)
-        from importlib import reload
-
-        import config.settings as s
-
         reload(s)
         assert s.VOTER_REG_MODEL == "ollama:llama3.3"
         assert s.VOTER_REG_MODELS == ["ollama:llama3.3", "ollama:mistral"]

@@ -1,4 +1,5 @@
 import pytest
+from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth.models import User
 
@@ -25,8 +26,6 @@ def request_factory(superuser, rf):
 
 class TestVoterViewAdmin:
     def test_is_registered(self):
-        from django.contrib import admin
-
         assert admin.site.is_registered(VoterView)
 
     def test_no_add_permission(self, request_factory, site):
@@ -52,8 +51,6 @@ class TestVoterViewAdmin:
 
 class TestVoterEventViewAdmin:
     def test_is_registered(self):
-        from django.contrib import admin
-
         assert admin.site.is_registered(VoterEventView)
 
     def test_no_add_permission(self, request_factory, site):
