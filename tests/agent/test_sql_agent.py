@@ -3,9 +3,10 @@ from importlib import reload
 import pytest
 from django.conf import settings
 from django.db import connection
+from pydantic_ai.models.openai import OpenAIChatModel
 
 import config.settings as s
-from apps.agent.sql_agent import get_view_schema
+from apps.agent.sql_agent import _LM_STUDIO_BASE_URL, get_view_schema, resolve_model
 from apps.agent.sql_examples import SQL_EXAMPLES
 from apps.ncsbe.models import VoterEventView, VoterView
 
@@ -95,3 +96,21 @@ class TestSettings:
         reload(s)
         assert s.VOTER_REG_MODEL == "ollama:llama3.3"
         assert s.VOTER_REG_MODELS == ["ollama:llama3.3", "ollama:mistral"]
+
+
+class TestResolveModel:
+    def test_known_prefix_returned_as_string(self):
+        assert resolve_model("openai:gpt-4o") == "openai:gpt-4o"
+
+    def test_ollama_prefix_returned_as_string(self):
+        assert resolve_model("ollama:llama3.3") == "ollama:llama3.3"
+
+    def test_lmstudio_returns_openai_model(self):
+        result = resolve_model("lmstudio:Qwen3-Coder-30B")
+        assert isinstance(result, OpenAIChatModel)
+        assert result.model_name == "Qwen3-Coder-30B"
+
+    def test_lmstudio_uses_correct_base_url(self):
+        result = resolve_model("lmstudio:any-model")
+        assert isinstance(result, OpenAIChatModel)
+        assert _LM_STUDIO_BASE_URL in str(result.client.base_url)

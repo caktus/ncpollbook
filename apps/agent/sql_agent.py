@@ -17,6 +17,8 @@ from django.conf import settings
 from django.db import connection as django_connection
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ModelRetry, RunContext
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.toolsets.function import FunctionToolset
 
 from apps.agent.sql_examples import SQL_EXAMPLES
@@ -28,6 +30,25 @@ logfire.instrument_psycopg()
 logfire.instrument_pydantic_ai()
 
 logger = logging.getLogger(__name__)
+
+_LM_STUDIO_BASE_URL = "http://localhost:1234/v1"
+
+
+def resolve_model(model_str: str) -> str | OpenAIChatModel:
+    """Resolve a model string to a pydantic-ai model.
+
+    Supports the ``lmstudio:<model-name>`` prefix, which connects to LM Studio's
+    local OpenAI-compatible server at ``http://localhost:1234/v1``.
+    All other strings are returned as-is for pydantic-ai's built-in resolution.
+    """
+    if model_str.startswith("lmstudio:"):
+        model_name = model_str[len("lmstudio:") :]
+        return OpenAIChatModel(
+            model_name,
+            provider=OpenAIProvider(base_url=_LM_STUDIO_BASE_URL, api_key="lm-studio"),
+        )
+    return model_str
+
 
 _DJANGO_TO_SQL: dict[str, str] = {
     "BigAutoField": "bigint",
@@ -109,7 +130,7 @@ class InvalidRequest(BaseModel):
 type Response = Success | InvalidRequest
 
 sql_gen_agent: Agent[SqlDeps, Response] = Agent(
-    settings.VOTER_REG_MODEL,
+    resolve_model(settings.VOTER_REG_MODEL),
     output_type=Response,  # type: ignore[arg-type]
     deps_type=SqlDeps,
     retries=2,
@@ -239,7 +260,7 @@ async def run_python_code(code: str) -> str:
 # ---------------------------------------------------------------------------
 
 voter_agent: Agent[None, str] = Agent(
-    settings.VOTER_REG_MODEL,
+    resolve_model(settings.VOTER_REG_MODEL),
     defer_model_check=True,
     instructions="""\
 You are a voter data analyst. You help users explore North Carolina voter
