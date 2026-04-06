@@ -111,6 +111,7 @@ class TestSqlGenEvals:
     def test_is_select_query_evaluator(self):
         """Unit-test IsSelectQuery evaluator with a known good output."""
         ds: Dataset[str, Response, None] = Dataset(
+            name="is_select_query_unit",
             cases=[Case(inputs="q")],
             evaluators=[IsSelectQuery()],
         )
@@ -122,6 +123,7 @@ class TestSqlGenEvals:
     def test_no_pii_evaluator_detects_pii(self):
         """NoPiiColumns evaluator should flag SQL containing PII column names."""
         ds: Dataset[str, Response, None] = Dataset(
+            name="no_pii_columns_unit",
             cases=[Case(inputs="q")],
             evaluators=[NoPiiColumns()],
         )
@@ -198,6 +200,7 @@ class TestVoterAgentEvals:
     def test_has_sql_code_block_evaluator(self):
         """HasSqlCodeBlock passes when output contains ```sql and fails otherwise."""
         ds: Dataset[str, str, None] = Dataset(
+            name="has_sql_code_block_unit",
             cases=[Case(inputs="q")],
             evaluators=[HasSqlCodeBlock()],
         )
@@ -210,6 +213,7 @@ class TestVoterAgentEvals:
     def test_no_pii_in_response_evaluator(self):
         """NoPiiInResponse flags responses containing PII column names."""
         ds: Dataset[str, str, None] = Dataset(
+            name="no_pii_in_response_unit",
             cases=[Case(inputs="q")],
             evaluators=[NoPiiInResponse()],
         )
