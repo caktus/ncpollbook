@@ -58,6 +58,12 @@ export VOTER_REG_MODELS=bedrock:openai.gpt-oss-20b-1:0
 # Multiple selectable models in the web UI; first entry is the default
 export VOTER_REG_MODELS=bedrock:openai.gpt-oss-20b-1:0,ollama:llama3.3
 
+# Claude
+export VOTER_REG_MODELS=bedrock:us.anthropic.claude-sonnet-4-6
+
+# LM Studio (local)
+export VOTER_REG_MODEL=lmstudio:Qwen3-Coder-30B-A3B-Instruct-MLX-4bit
+
 # Start the web chat UI
 uv run uvicorn apps.agent.web:app --host 127.0.0.1 --port 7932
 ```

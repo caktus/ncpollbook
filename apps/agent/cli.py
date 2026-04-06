@@ -25,7 +25,8 @@ import django
 
 django.setup()
 
-from apps.agent.sql_agent import voter_agent  # noqa: E402
+from apps.agent.models import AgentTool  # noqa: E402
+from apps.agent.sql_agent import get_tool_model, voter_agent  # noqa: E402
 
 console = Console()
 
@@ -47,7 +48,7 @@ async def _run_question(question: str) -> None:
 
     status = Status("[cyan]Calling model…[/]", console=console, spinner="dots")
 
-    async with voter_agent.iter(question) as agent_run:
+    async with voter_agent.iter(question, model=get_tool_model(AgentTool.VOTER_AGENT)) as agent_run:
         async for node in agent_run:
             if isinstance(node, ModelRequestNode):
                 # Show tool results that arrived with this request

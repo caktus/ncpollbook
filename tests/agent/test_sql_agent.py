@@ -6,9 +6,11 @@ from django.db import connection
 from pydantic_ai.models.openai import OpenAIChatModel
 
 import config.settings as s
+from apps.agent.models import AgentTool, ModelIdentifier, ToolModel
 from apps.agent.sql_agent import (
     _LM_STUDIO_BASE_URL,
     _is_safe_select_query,
+    get_tool_model,
     get_view_schema,
     resolve_model,
 )
@@ -147,3 +149,40 @@ class TestResolveModel:
         result = resolve_model("lmstudio:any-model")
         assert isinstance(result, OpenAIChatModel)
         assert _LM_STUDIO_BASE_URL in str(result.client.base_url)
+
+
+class TestGetToolModel:
+    @pytest.mark.django_db
+    def test_falls_back_to_settings_when_no_db_records(self):
+        result = get_tool_model(AgentTool.SQL_GEN)
+        assert result == resolve_model(settings.VOTER_REG_MODEL)
+
+    @pytest.mark.django_db
+    def test_returns_specific_tool_model_when_configured(self):
+        m = ModelIdentifier.objects.create(name="ollama:llama3.3")
+        ToolModel.objects.create(tool_name=AgentTool.SQL_GEN, model=m)
+        assert get_tool_model(AgentTool.SQL_GEN) == "ollama:llama3.3"
+
+    @pytest.mark.django_db
+    def test_falls_back_to_default_null_record(self):
+        m = ModelIdentifier.objects.create(name="openai:gpt-4o-mini")
+        ToolModel.objects.create(tool_name=None, model=m)
+        # No sql_gen record — should use the NULL default
+        assert get_tool_model(AgentTool.SQL_GEN) == "openai:gpt-4o-mini"
+
+    @pytest.mark.django_db
+    def test_specific_tool_takes_precedence_over_default(self):
+        default_m = ModelIdentifier.objects.create(name="openai:gpt-4o-mini")
+        specific_m = ModelIdentifier.objects.create(name="ollama:llama3.3")
+        ToolModel.objects.create(tool_name=None, model=default_m)
+        ToolModel.objects.create(tool_name=AgentTool.SQL_GEN, model=specific_m)
+        assert get_tool_model(AgentTool.SQL_GEN) == "ollama:llama3.3"
+
+    @pytest.mark.django_db
+    def test_voter_agent_and_sql_gen_can_use_different_models(self):
+        sql_m = ModelIdentifier.objects.create(name="bedrock:us.anthropic.claude-sonnet-4-6")
+        voter_m = ModelIdentifier.objects.create(name="lmstudio:Qwen3-Coder-30B")
+        ToolModel.objects.create(tool_name=AgentTool.SQL_GEN, model=sql_m)
+        ToolModel.objects.create(tool_name=AgentTool.VOTER_AGENT, model=voter_m)
+        assert get_tool_model(AgentTool.SQL_GEN) == "bedrock:us.anthropic.claude-sonnet-4-6"
+        assert isinstance(get_tool_model(AgentTool.VOTER_AGENT), OpenAIChatModel)

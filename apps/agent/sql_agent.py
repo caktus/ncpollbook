@@ -21,6 +21,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.toolsets.function import FunctionToolset
 
+from apps.agent.models import AgentTool, ToolModel
 from apps.agent.sql_examples import SQL_EXAMPLES
 from apps.ncsbe.models import VoterEventView, VoterView
 
@@ -165,6 +166,23 @@ Example queries:
 """
 
 
+def get_tool_model(tool_name: str | None) -> str | OpenAIChatModel:
+    """Return the model configured for a tool, falling back to settings.
+
+    Lookup order:
+    1. ToolModel with matching tool_name
+    2. ToolModel with tool_name=NULL (default)
+    3. settings.VOTER_REG_MODEL
+    """
+    record = (
+        ToolModel.objects.filter(tool_name=tool_name).select_related("model").first()
+        or ToolModel.objects.filter(tool_name=None).select_related("model").first()
+    )
+    if record:
+        return resolve_model(record.model.name)
+    return resolve_model(settings.VOTER_REG_MODEL)
+
+
 _DISALLOWED_STATEMENTS = {"INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE", "CREATE"}
 
 
@@ -200,7 +218,9 @@ async def _run_sql_query(question: str) -> str:
     """Generate and execute a SQL query. Returns results as a markdown table."""
     async with await psycopg.AsyncConnection.connect(**_get_async_conninfo()) as conn:
         deps = SqlDeps(conn=conn)
-        result = await sql_gen_agent.run(question, deps=deps)
+        result = await sql_gen_agent.run(
+            question, deps=deps, model=get_tool_model(AgentTool.SQL_GEN)
+        )
         if isinstance(result.output, InvalidRequest):
             return f"Could not generate query: {result.output.error_message}"
         sql = result.output.sql_query
