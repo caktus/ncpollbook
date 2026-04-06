@@ -165,13 +165,25 @@ Example queries:
 """
 
 
+_DISALLOWED_STATEMENTS = {"INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE", "CREATE"}
+
+
+def _is_safe_select_query(sql: str) -> bool:
+    """Return True if sql contains SELECT and no disallowed write/DDL statements."""
+    upper = sql.upper()
+    if "SELECT" not in upper:
+        return False
+    words = set(upper.split())
+    return words.isdisjoint(_DISALLOWED_STATEMENTS)
+
+
 @sql_gen_agent.output_validator
 async def _validate_sql(ctx: RunContext[SqlDeps], result: Response) -> Response:
     if isinstance(result, InvalidRequest):
         return result
     result.sql_query = result.sql_query.replace("\\", "")
-    if not result.sql_query.upper().startswith("SELECT"):
-        raise ModelRetry("Please create a SELECT query")
+    if not _is_safe_select_query(result.sql_query):
+        raise ModelRetry("Please create a SELECT-only query with no data-modifying statements")
     try:
         await ctx.deps.conn.execute(f"EXPLAIN {result.sql_query}")
     except psycopg.Error as e:
@@ -225,7 +237,7 @@ async def run_sql_query(question: str) -> str:
 """
 
 
-@voter_toolset.tool_plain
+# @voter_toolset.tool_plain
 async def run_python_code(code: str) -> str:
     """Execute Python code written to analyse voter data.
 

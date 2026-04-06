@@ -6,9 +6,42 @@ from django.db import connection
 from pydantic_ai.models.openai import OpenAIChatModel
 
 import config.settings as s
-from apps.agent.sql_agent import _LM_STUDIO_BASE_URL, get_view_schema, resolve_model
+from apps.agent.sql_agent import (
+    _LM_STUDIO_BASE_URL,
+    _is_safe_select_query,
+    get_view_schema,
+    resolve_model,
+)
 from apps.agent.sql_examples import SQL_EXAMPLES
 from apps.ncsbe.models import VoterEventView, VoterView
+
+
+class TestIsSafeSelectQuery:
+    def test_simple_select_is_safe(self):
+        assert _is_safe_select_query("SELECT 1") is True
+
+    def test_cte_with_select_is_safe(self):
+        sql = "WITH cte AS (SELECT ncid FROM voter_view) SELECT * FROM cte"
+        assert _is_safe_select_query(sql) is True
+
+    def test_sql_comment_before_select_is_safe(self):
+        sql = "-- count voters\nSELECT COUNT(*) FROM voter_view"
+        assert _is_safe_select_query(sql) is True
+
+    def test_no_select_is_not_safe(self):
+        assert _is_safe_select_query("SHOW TABLES") is False
+
+    def test_insert_is_not_safe(self):
+        assert _is_safe_select_query("INSERT INTO t VALUES (1)") is False
+
+    def test_update_is_not_safe(self):
+        assert _is_safe_select_query("UPDATE t SET x=1") is False
+
+    def test_delete_is_not_safe(self):
+        assert _is_safe_select_query("DELETE FROM t") is False
+
+    def test_drop_is_not_safe(self):
+        assert _is_safe_select_query("DROP TABLE t") is False
 
 
 class TestGetViewSchema:
