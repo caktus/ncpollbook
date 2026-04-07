@@ -212,6 +212,7 @@ async def _validate_sql(ctx: RunContext[SqlDeps], result: Response) -> Response:
     try:
         await ctx.deps.conn.execute(f"EXPLAIN {result.sql_query}")
     except psycopg.Error as e:
+        await ctx.deps.conn.rollback()
         raise ModelRetry(f"Invalid query: {e}") from e
     return result
 
@@ -255,7 +256,11 @@ async def run_sql_query(question: str) -> str:
     Do NOT pass SQL — SQL is generated internally from the question.
     Returns results as a markdown table.
     """
-    return await _run_sql_query(question)
+    try:
+        return await _run_sql_query(question)
+    except Exception as e:
+        logger.exception("run_sql_query failed for question: %s", question)
+        return f"Error running query: {e}"
 
 
 _MONTY_TYPE_STUBS = """\

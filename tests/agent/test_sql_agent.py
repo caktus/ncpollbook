@@ -1,15 +1,22 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import psycopg
 import pytest
 from asgiref.sync import async_to_sync
 from django.db import connection
+from pydantic_ai.exceptions import ModelRetry
 from pydantic_ai.models.openai import OpenAIChatModel
 
 from apps.agent.models import AgentTool, ModelIdentifier, ToolModel
 from apps.agent.sql_agent import (
     _LM_STUDIO_BASE_URL,
+    Success,
     _is_safe_select_query,
+    _validate_sql,
     get_tool_model,
     get_view_schema,
     resolve_model,
+    run_sql_query,
 )
 from apps.agent.sql_examples import SQL_EXAMPLES
 from apps.ncsbe.models import VoterEventView, VoterView
@@ -169,3 +176,29 @@ class TestGetToolModel:
             == "bedrock:us.anthropic.claude-sonnet-4-6"
         )
         assert isinstance(async_to_sync(get_tool_model)(AgentTool.VOTER_AGENT), OpenAIChatModel)
+
+
+class TestValidateSqlRollback:
+    def test_rolls_back_on_explain_failure(self):
+        """Failed EXPLAIN must rollback so subsequent retries start with a clean transaction."""
+        conn = AsyncMock()
+        conn.execute.side_effect = psycopg.Error("syntax error")
+        ctx = MagicMock()
+        ctx.deps.conn = conn
+        result = Success(sql_query="SELECT 1")
+
+        with pytest.raises(ModelRetry):
+            async_to_sync(_validate_sql)(ctx, result)
+
+        conn.rollback.assert_awaited_once()
+
+
+class TestRunSqlQueryToolErrorHandling:
+    def test_returns_error_string_on_exception(self):
+        """Tool must return an error string rather than raising, keeping voter_agent alive."""
+        with patch(
+            "apps.agent.sql_agent._run_sql_query",
+            AsyncMock(side_effect=RuntimeError("boom")),
+        ):
+            result = async_to_sync(run_sql_query)("how many voters?")
+        assert result.startswith("Error running query:")
