@@ -2,7 +2,10 @@ import json
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from asgiref.sync import async_to_sync
 from django.test import Client, override_settings
+
+from apps.agent.views import _build_question
 
 
 async def _collect_async(agen) -> list[bytes]:
@@ -18,7 +21,36 @@ def client():
 _MESSAGES = [{"role": "user", "content": "how many active voters are there?"}]
 
 
-class TestChatCompletions:
+class TestBuildQuestion:
+    def test_single_user_message(self):
+        msgs = [{"role": "user", "content": "How many voters?"}]
+        assert _build_question(msgs) == "How many voters?"
+
+    def test_no_user_message_returns_none(self):
+        msgs = [{"role": "system", "content": "You are an assistant."}]
+        assert _build_question(msgs) is None
+
+    def test_multi_turn_includes_context(self):
+        msgs = [
+            {"role": "user", "content": "How many people voted in Durham's 2026 primary?"},
+            {"role": "assistant", "content": "66,154 people voted."},
+            {"role": "user", "content": "What was the breakdown by party?"},
+        ]
+        result = _build_question(msgs)
+        assert result is not None
+        assert "Conversation so far:" in result
+        assert "66,154 people voted" in result
+        assert "Current question: What was the breakdown by party?" in result
+
+    def test_multipart_content(self):
+        msgs = [
+            {
+                "role": "user",
+                "content": [{"type": "text", "text": "Hello"}, {"type": "text", "text": "world"}],
+            }
+        ]
+        assert _build_question(msgs) == "Hello world"
+
     @pytest.mark.django_db
     def test_returns_openai_shape(self, client):
         with (
@@ -62,8 +94,6 @@ class TestChatCompletions:
         assert resp.status_code == 200
         assert "text/event-stream" in resp["Content-Type"]
         # streaming_content is an async generator; collect it synchronously via Django's helper
-        from asgiref.sync import async_to_sync
-
         chunks = async_to_sync(lambda: _collect_async(resp.streaming_content))()
         body = b"".join(chunks).decode()
         assert "data:" in body

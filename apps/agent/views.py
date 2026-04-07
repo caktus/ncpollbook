@@ -37,17 +37,47 @@ def _check_api_key(request: HttpRequest) -> JsonResponse | None:
     return None
 
 
-def _last_user_message(messages: list[dict]) -> str | None:
-    """Return the content of the last user message, or None if not found."""
+def _extract_text(content: str | list) -> str:
+    if isinstance(content, list):
+        return " ".join(p.get("text", "") for p in content if p.get("type") == "text").strip()
+    return str(content).strip()
+
+
+def _build_question(messages: list[dict]) -> str | None:
+    """Build a question from the message history.
+
+    When there is only one user turn, returns it as-is.
+    When there are multiple turns, prepends prior conversation as context so
+    the agent can answer follow-up questions correctly.
+    """
+    # Find the last user message
+    question = None
     for msg in reversed(messages):
         if msg.get("role") == "user":
-            content = msg.get("content", "")
-            if isinstance(content, list):
-                # Handle OpenAI multi-part content: [{"type": "text", "text": "..."}]
-                parts = [p.get("text", "") for p in content if p.get("type") == "text"]
-                return " ".join(parts).strip() or None
-            return str(content).strip() or None
-    return None
+            question = _extract_text(msg.get("content", ""))
+            break
+    if not question:
+        return None
+
+    # Single-turn: no context needed
+    prior = messages[:-1]
+    if not any(m.get("role") == "user" for m in prior):
+        return question
+
+    # Multi-turn: prepend conversation context
+    context_lines = []
+    for msg in prior:
+        role = msg.get("role", "")
+        text = _extract_text(msg.get("content", ""))
+        if role in ("user", "assistant") and text:
+            label = "User" if role == "user" else "Assistant"
+            context_lines.append(f"{label}: {text}")
+
+    if not context_lines:
+        return question
+
+    context = "\n".join(context_lines)
+    return f"Conversation so far:\n{context}\n\nCurrent question: {question}"
 
 
 def _completion_response(answer: str, stream: bool = False) -> dict:
@@ -123,7 +153,7 @@ async def chat_completions(request: HttpRequest) -> JsonResponse | StreamingHttp
         )
 
     messages = body.get("messages", [])
-    question = _last_user_message(messages)
+    question = _build_question(messages)
     if not question:
         return JsonResponse(
             {"error": {"message": "No user message found", "type": "invalid_request_error"}},
