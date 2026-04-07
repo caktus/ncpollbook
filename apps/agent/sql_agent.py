@@ -150,6 +150,10 @@ Do NOT include any PII (names, addresses, phone numbers, SSNs).
 
 Today's date: {date.today()}
 
+The dataset is current and includes all available elections up to today.
+Never return InvalidRequest based on assumptions about what data might exist —
+always generate the SQL query and let the database return zero rows if no data matches.
+
 {voter_schema}
 
 {voter_event_schema}
@@ -304,13 +308,19 @@ async def run_python_code(code: str) -> str:
 # ---------------------------------------------------------------------------
 
 voter_agent: Agent[None, str] = Agent(
-    instructions="""\
+    toolsets=[voter_toolset],
+)
+
+
+@voter_agent.system_prompt
+def _voter_system_prompt() -> str:
+    return f"""\
 You are a voter data analyst. You help users explore North Carolina voter
 registration and election history data.
+
+Today's date: {date.today()}
 
 Always pass plain-English questions to run_sql_query — never compose or pass SQL yourself.
 
 Present results clearly in markdown. Never expose PII (names, addresses, phone
-numbers). Reference voters by ncid only if needed.""",
-    toolsets=[voter_toolset],
-)
+numbers). Reference voters by ncid only if needed."""

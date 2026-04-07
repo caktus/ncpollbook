@@ -1,3 +1,5 @@
+import asyncio
+from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import psycopg
@@ -12,7 +14,9 @@ from apps.agent.sql_agent import (
     _LM_STUDIO_BASE_URL,
     Success,
     _is_safe_select_query,
+    _sql_system_prompt,
     _validate_sql,
+    _voter_system_prompt,
     get_tool_model,
     get_view_schema,
     resolve_model,
@@ -118,6 +122,30 @@ class TestSqlExamples:
     def test_example_is_syntactically_valid(self, sql):
         with connection.cursor() as cursor:
             cursor.execute(f"EXPLAIN {sql.rstrip(';').rstrip()}")
+
+    def test_example_count(self):
+        assert len(SQL_EXAMPLES) == 7
+
+
+class TestSqlGenSystemPrompt:
+    def test_includes_todays_date(self):
+        prompt = asyncio.run(_sql_system_prompt())
+        assert str(date.today()) in prompt
+
+    def test_never_assume_data_limitations(self):
+        prompt = asyncio.run(_sql_system_prompt())
+        assert "never return InvalidRequest" in prompt.lower() or "never" in prompt.lower()
+        assert "dataset is current" in prompt.lower()
+
+
+class TestVoterSystemPrompt:
+    def test_includes_todays_date(self):
+        prompt = _voter_system_prompt()
+        assert str(date.today()) in prompt
+
+    def test_includes_run_sql_query_instruction(self):
+        prompt = _voter_system_prompt()
+        assert "run_sql_query" in prompt
 
 
 class TestResolveModel:

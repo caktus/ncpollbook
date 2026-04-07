@@ -52,4 +52,4 @@ class TestAgentModelsFixture:
         sql_gen = ToolModel.objects.get(tool_name=AgentTool.SQL_GEN)
         assert "claude-haiku" in sql_gen.model.name
         voter = ToolModel.objects.get(tool_name=AgentTool.VOTER_AGENT)
-        assert "gpt-oss" in voter.model.name
+        assert "gemma" in voter.model.name

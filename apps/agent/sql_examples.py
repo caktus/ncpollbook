@@ -138,10 +138,29 @@ WHERE cohort IN ('New (Last 2 Years)', 'Legacy (10+ Years)')
 GROUP BY 1
 ORDER BY 1 DESC;"""
 
+SQL_EXAMPLE_6 = """\
+-- 6. All Available Elections
+-- List every distinct election in the dataset, ordered by date descending.
+SELECT DISTINCT
+    election_date,
+    election_type,
+    election_year
+FROM ncsbe_votereventview
+ORDER BY election_date DESC, election_type;"""
+
+SQL_EXAMPLE_7 = """\
+-- 7. All Counties
+-- List every distinct county in the voter registration data.
+SELECT DISTINCT county_name
+FROM ncsbe_voterview
+ORDER BY county_name;"""
+
 SQL_EXAMPLES: list[str] = [
     SQL_EXAMPLE_1,
     SQL_EXAMPLE_2,
     SQL_EXAMPLE_3,
     SQL_EXAMPLE_4,
     SQL_EXAMPLE_5,
+    SQL_EXAMPLE_6,
+    SQL_EXAMPLE_7,
 ]

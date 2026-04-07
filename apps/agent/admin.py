@@ -16,6 +16,7 @@ class ModelIdentifierAdmin(admin.ModelAdmin):
     )
     list_filter = ("deployment_type", "provider_org", "engine")
     search_fields = ("name", "provider_org", "engine")
+    ordering = ("name",)
 
     @admin.display(description="Scale", ordering="scale")
     def display_scale(self, obj: ModelIdentifier) -> str:
