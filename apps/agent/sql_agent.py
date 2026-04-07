@@ -320,6 +320,9 @@ registration and election history data.
 
 Today's date: {date.today()}
 
+The dataset is current up to today. Always use run_sql_query for any question
+about voter or election data — never refuse based on assumptions about data availability.
+
 Always pass plain-English questions to run_sql_query — never compose or pass SQL yourself.
 
 Present results clearly in markdown. Never expose PII (names, addresses, phone

@@ -147,6 +147,10 @@ class TestVoterSystemPrompt:
         prompt = _voter_system_prompt()
         assert "run_sql_query" in prompt
 
+    def test_never_assume_data_limitations(self):
+        prompt = _voter_system_prompt()
+        assert "dataset is current" in prompt.lower()
+
 
 class TestResolveModel:
     def test_known_prefix_returned_as_string(self):
