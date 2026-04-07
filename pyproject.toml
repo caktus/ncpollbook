@@ -5,16 +5,27 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "boto3>=1.42.74",
     "click>=8.3.1",
     "dj-database-url>=3.1.2",
     "django>=6.0.3",
+    "django-click>=2.5.0",
+    "django-pgviews-redux>=1.2.0",
+    "httpx>=0.28.1",
+    "logfire[psycopg]>=4.30.0",
     "polars>=1.39.3",
     "psycopg>=3.3.3",
+    "pydantic-ai-slim[openai,web]>=1.70.0",
+    "pydantic-monty>=0.0.8",
 ]
 
 [dependency-groups]
 dev = [
+    "factory-boy>=3.3.3",
     "pre-commit>=4.5.1",
+    "pydantic-evals>=1.70.0",
+    "pytest>=9.0.2",
+    "pytest-django>=4.12.0",
     "ruff>=0.15.7",
 ]
 
@@ -36,6 +47,8 @@ select = [
     "SIM",  # flake8-simplify
     "DJ",   # flake8-django
     "RUF",  # ruff-specific rules
+    "PLC0415", # import-outside-top-level
+    "E402", # module-import-not-at-top-of-file
 ]
 ignore = [
     "E501",    # line too long (handled by formatter)
@@ -50,3 +63,13 @@ known-first-party = ["apps", "config"]
 
 [tool.uv]
 default-groups = ["dev"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-m 'not llm'"
+markers = [
+    "llm: evals that call a real LLM; skipped by default, run with -m llm",
+]

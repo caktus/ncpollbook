@@ -1,0 +1,96 @@
+[
+{
+  "model": "agent.modelidentifier",
+  "pk": 1,
+  "fields": {
+    "name": "bedrock:us.anthropic.claude-sonnet-4-6",
+    "deployment_type": "cloud-managed",
+    "provider_org": "Anthropic",
+    "engine": "",
+    "scale": null,
+    "precision": "",
+    "size_on_disk": null,
+    "model_uri": ""
+  }
+},
+{
+  "model": "agent.modelidentifier",
+  "pk": 2,
+  "fields": {
+    "name": "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "deployment_type": "cloud-managed",
+    "provider_org": "Anthropic",
+    "engine": "",
+    "scale": null,
+    "precision": "",
+    "size_on_disk": null,
+    "model_uri": ""
+  }
+},
+{
+  "model": "agent.modelidentifier",
+  "pk": 3,
+  "fields": {
+    "name": "lmstudio:Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
+    "deployment_type": "self-hosted",
+    "provider_org": "Qwen",
+    "engine": "LM Studio",
+    "scale": 30,
+    "precision": "4bit",
+    "size_on_disk": 17.19,
+    "model_uri": "https://huggingface.co/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit"
+  }
+},
+{
+  "model": "agent.modelidentifier",
+  "pk": 4,
+  "fields": {
+    "name": "lmstudio:google/gemma-3-4b",
+    "deployment_type": "self-hosted",
+    "provider_org": "Google",
+    "engine": "LM Studio",
+    "scale": 4,
+    "precision": "4bit",
+    "size_on_disk": 3.0,
+    "model_uri": "https://lmstudio.ai/models/google/gemma-3-4b"
+  }
+},
+{
+  "model": "agent.modelidentifier",
+  "pk": 5,
+  "fields": {
+    "name": "lmstudio:openai/gpt-oss-20b",
+    "deployment_type": "self-hosted",
+    "provider_org": "OpenAI",
+    "engine": "LM Studio",
+    "scale": 20,
+    "precision": "MXFP4",
+    "size_on_disk": 12.1,
+    "model_uri": "https://lmstudio.ai/models/openai/gpt-oss-20b"
+  }
+},
+{
+  "model": "agent.toolmodel",
+  "pk": 1,
+  "fields": {
+    "tool_name": "sql_gen",
+    "model": 2
+  }
+},
+{
+  "model": "agent.toolmodel",
+  "pk": 2,
+  "fields": {
+    "tool_name": "voter_agent",
+    "model": 4
+  }
+},
+{
+  "model": "agent.toolmodel",
+  "pk": 3,
+  "fields": {
+    "tool_name": null,
+    "model": 5
+  }
+}
+]
