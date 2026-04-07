@@ -165,12 +165,13 @@ Example queries:
 
 
 async def get_tool_model(tool_name: str | None) -> str | OpenAIChatModel:
-    """Return the model configured for a tool, falling back to a built-in default.
+    """Return the model configured for a tool.
 
     Lookup order:
     1. ToolModel with matching tool_name
     2. ToolModel with tool_name=NULL (default)
-    3. "openai:gpt-4o" (built-in default)
+
+    Raises ValueError if no ToolModel is configured.
     """
 
     @sync_to_async
@@ -181,7 +182,10 @@ async def get_tool_model(tool_name: str | None) -> str | OpenAIChatModel:
         )
         if record:
             return resolve_model(record.model.name)
-        return resolve_model("openai:gpt-4o")
+        raise ValueError(
+            f"No ToolModel configured for tool '{tool_name}' and no default (tool_name=NULL) found. "
+            "Add a ToolModel record in the Django admin."
+        )
 
     return await _query()
 

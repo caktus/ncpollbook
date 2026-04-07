@@ -13,4 +13,7 @@ class ModelIdentifierAdmin(admin.ModelAdmin):
 @admin.register(ToolModel)
 class ToolModelAdmin(admin.ModelAdmin):
     list_display = ("tool_name", "model")
+    list_editable = ("model",)
+    list_filter = ("model",)
     list_select_related = ("model",)
+    search_fields = ("tool_name", "model__name")

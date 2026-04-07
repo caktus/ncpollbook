@@ -133,9 +133,9 @@ class TestResolveModel:
 
 class TestGetToolModel:
     @pytest.mark.django_db
-    def test_falls_back_to_default_when_no_db_records(self):
-        result = async_to_sync(get_tool_model)(AgentTool.SQL_GEN)
-        assert result == resolve_model("openai:gpt-4o")
+    def test_raises_when_no_db_records(self):
+        with pytest.raises(ValueError, match="No ToolModel configured"):
+            async_to_sync(get_tool_model)(AgentTool.SQL_GEN)
 
     @pytest.mark.django_db
     def test_returns_specific_tool_model_when_configured(self):

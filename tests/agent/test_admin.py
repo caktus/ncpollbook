@@ -25,3 +25,7 @@ class TestToolModelAdmin:
         ma = admin.site._registry[ToolModel]
         assert "tool_name" in ma.list_display
         assert "model" in ma.list_display
+
+    def test_list_editable(self):
+        ma = admin.site._registry[ToolModel]
+        assert "model" in ma.list_editable

@@ -44,26 +44,10 @@ Data is cached in `scratch/data/` after the first download.
 
 An AI agent can query the `VoterView` and `VoterEventView` materialized views via natural language.
 
+The model is configured via the Django admin under **Agent > Tool Models**. Add a `ToolModel` record
+for each tool (`sql_gen`, `voter_agent`), or add one with no tool name as a default for all tools.
+
 ```bash
-# Set via VOTER_REG_MODEL, or let VOTER_REG_MODELS drive the default (first entry wins).
-# If neither is set, defaults to openai:gpt-4o (requires $OPENAI_API_KEY).
-
-# OpenAI
-export VOTER_REG_MODEL=openai:gpt-4o
-export OPENAI_API_KEY=sk-...
-
-# Bedrock (no OPENAI_API_KEY needed)
-export VOTER_REG_MODELS=bedrock:openai.gpt-oss-20b-1:0
-
-# Multiple selectable models in the web UI; first entry is the default
-export VOTER_REG_MODELS=bedrock:openai.gpt-oss-20b-1:0,ollama:llama3.3
-
-# Claude
-export VOTER_REG_MODELS=bedrock:us.anthropic.claude-sonnet-4-6
-
-# LM Studio (local)
-export VOTER_REG_MODEL=lmstudio:Qwen3-Coder-30B-A3B-Instruct-MLX-4bit
-
 # Start the web chat UI
 uv run uvicorn apps.agent.web:app --host 127.0.0.1 --port 7932
 ```
