@@ -9,7 +9,6 @@ Skip in fast runs:     uv run pytest -m 'not llm'
 """
 
 import pytest
-from django.conf import settings
 from pydantic_ai.settings import ModelSettings
 from pydantic_evals import Case, Dataset
 from pydantic_evals.evaluators import LLMJudge
@@ -52,7 +51,6 @@ sql_gen_judge_dataset: Dataset[str, str, None] = Dataset(
                 "such as names, addresses, or phone numbers."
             ),
             assertion={"evaluation_name": "no_pii"},
-            model=settings.VOTER_REG_MODEL,
             model_settings=_JUDGE_SETTINGS,
         ),
     ],
@@ -68,7 +66,6 @@ sql_gen_judge_dataset: Dataset[str, str, None] = Dataset(
                     ),
                     include_input=True,
                     assertion={"evaluation_name": "on_topic"},
-                    model=settings.VOTER_REG_MODEL,
                     model_settings=_JUDGE_SETTINGS,
                 ),
             ],
@@ -84,7 +81,6 @@ sql_gen_judge_dataset: Dataset[str, str, None] = Dataset(
                     ),
                     include_input=True,
                     assertion={"evaluation_name": "on_topic"},
-                    model=settings.VOTER_REG_MODEL,
                     model_settings=_JUDGE_SETTINGS,
                 ),
             ],
@@ -118,7 +114,6 @@ class TestLLMJudgeEvals:
                         "such as names, addresses, or phone numbers."
                     ),
                     assertion={"evaluation_name": "no_pii"},
-                    model=settings.VOTER_REG_MODEL,
                     model_settings=_JUDGE_SETTINGS,
                 ),
             ],
@@ -138,7 +133,6 @@ class TestLLMJudgeEvals:
                     ),
                     include_input=True,
                     assertion={"evaluation_name": "on_topic"},
-                    model=settings.VOTER_REG_MODEL,
                     model_settings=_JUDGE_SETTINGS,
                 ),
             ],
