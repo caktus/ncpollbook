@@ -167,20 +167,3 @@ EXPORT_DIR = BASE_DIR / "exports"
 
 # Directory where downloaded NCSBE data files are cached
 SCRATCH_DIR = BASE_DIR / "scratch" / "data"
-
-# Additional models available for selection in the web chat UI.
-# Comma-separated list. If set, the first entry becomes the primary model
-# when VOTER_REG_MODEL is not explicitly set.
-# Example: VOTER_REG_MODELS=bedrock:openai.gpt-oss-20b-1:0,ollama:llama3.3
-_models_raw = os.getenv("VOTER_REG_MODELS", "")
-VOTER_REG_MODELS: list[str] = [m.strip() for m in _models_raw.split(",") if m.strip()]
-
-# Primary LLM model — explicit env var takes precedence, then first of
-# VOTER_REG_MODELS, then the built-in default.
-# Example: VOTER_REG_MODEL=ollama:llama3.3
-VOTER_REG_MODEL = os.getenv("VOTER_REG_MODEL") or (
-    VOTER_REG_MODELS[0] if VOTER_REG_MODELS else "openai:gpt-4o"
-)
-
-if not VOTER_REG_MODELS:
-    VOTER_REG_MODELS = [VOTER_REG_MODEL]

@@ -14,7 +14,6 @@ import logfire
 import psycopg
 import pydantic_monty
 from asgiref.sync import sync_to_async
-from django.conf import settings
 from django.db import connection as django_connection
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ModelRetry, RunContext
@@ -132,11 +131,9 @@ class InvalidRequest(BaseModel):
 type Response = Success | InvalidRequest
 
 sql_gen_agent: Agent[SqlDeps, Response] = Agent(
-    resolve_model(settings.VOTER_REG_MODEL),
     output_type=Response,  # type: ignore[arg-type]
     deps_type=SqlDeps,
     retries=2,
-    defer_model_check=True,
 )
 
 
@@ -168,12 +165,12 @@ Example queries:
 
 
 async def get_tool_model(tool_name: str | None) -> str | OpenAIChatModel:
-    """Return the model configured for a tool, falling back to settings.
+    """Return the model configured for a tool, falling back to a built-in default.
 
     Lookup order:
     1. ToolModel with matching tool_name
     2. ToolModel with tool_name=NULL (default)
-    3. settings.VOTER_REG_MODEL
+    3. "openai:gpt-4o" (built-in default)
     """
 
     @sync_to_async
@@ -184,7 +181,7 @@ async def get_tool_model(tool_name: str | None) -> str | OpenAIChatModel:
         )
         if record:
             return resolve_model(record.model.name)
-        return resolve_model(settings.VOTER_REG_MODEL)
+        return resolve_model("openai:gpt-4o")
 
     return await _query()
 
@@ -298,14 +295,11 @@ async def run_python_code(code: str) -> str:
 # ---------------------------------------------------------------------------
 
 voter_agent: Agent[None, str] = Agent(
-    resolve_model(settings.VOTER_REG_MODEL),
-    defer_model_check=True,
     instructions="""\
 You are a voter data analyst. You help users explore North Carolina voter
 registration and election history data.
 
 Always pass plain-English questions to run_sql_query — never compose or pass SQL yourself.
-Use run_python_code when you need to chain multiple queries or compute cross-query statistics.
 
 Present results clearly in markdown. Never expose PII (names, addresses, phone
 numbers). Reference voters by ncid only if needed.""",

@@ -14,8 +14,6 @@ import django
 
 django.setup()
 
-from django.conf import settings  # noqa: E402
+from apps.agent.sql_agent import voter_agent  # noqa: E402
 
-from apps.agent.sql_agent import resolve_model, voter_agent  # noqa: E402
-
-app = voter_agent.to_web(models=[resolve_model(m) for m in settings.VOTER_REG_MODELS])
+app = voter_agent.to_web()

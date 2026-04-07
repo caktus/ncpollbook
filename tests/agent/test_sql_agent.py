@@ -1,12 +1,8 @@
-from importlib import reload
-
 import pytest
 from asgiref.sync import async_to_sync
-from django.conf import settings
 from django.db import connection
 from pydantic_ai.models.openai import OpenAIChatModel
 
-import config.settings as s
 from apps.agent.models import AgentTool, ModelIdentifier, ToolModel
 from apps.agent.sql_agent import (
     _LM_STUDIO_BASE_URL,
@@ -117,23 +113,6 @@ class TestSqlExamples:
             cursor.execute(f"EXPLAIN {sql.rstrip(';').rstrip()}")
 
 
-class TestSettings:
-    def test_voter_reg_models_contains_primary_model(self):
-        assert settings.VOTER_REG_MODEL in settings.VOTER_REG_MODELS
-
-    def test_voter_reg_models_is_list(self):
-        assert isinstance(settings.VOTER_REG_MODELS, list)
-        assert len(settings.VOTER_REG_MODELS) >= 1
-
-    def test_voter_reg_model_derived_from_models_list(self, monkeypatch):
-        # When only VOTER_REG_MODELS is set, VOTER_REG_MODEL should pick the first entry.
-        monkeypatch.setenv("VOTER_REG_MODELS", "ollama:llama3.3,ollama:mistral")
-        monkeypatch.delenv("VOTER_REG_MODEL", raising=False)
-        reload(s)
-        assert s.VOTER_REG_MODEL == "ollama:llama3.3"
-        assert s.VOTER_REG_MODELS == ["ollama:llama3.3", "ollama:mistral"]
-
-
 class TestResolveModel:
     def test_known_prefix_returned_as_string(self):
         assert resolve_model("openai:gpt-4o") == "openai:gpt-4o"
@@ -154,9 +133,9 @@ class TestResolveModel:
 
 class TestGetToolModel:
     @pytest.mark.django_db
-    def test_falls_back_to_settings_when_no_db_records(self):
+    def test_falls_back_to_default_when_no_db_records(self):
         result = async_to_sync(get_tool_model)(AgentTool.SQL_GEN)
-        assert result == resolve_model(settings.VOTER_REG_MODEL)
+        assert result == resolve_model("openai:gpt-4o")
 
     @pytest.mark.django_db
     def test_returns_specific_tool_model_when_configured(self):
