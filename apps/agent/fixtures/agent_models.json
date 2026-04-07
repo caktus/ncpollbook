@@ -7,8 +7,10 @@
       "deployment_type": "cloud-managed",
       "provider_org": "Anthropic",
       "engine": "",
-      "scale": "",
-      "precision": ""
+      "scale": null,
+      "precision": "",
+      "size_on_disk": null,
+      "model_uri": ""
     }
   },
   {
@@ -19,8 +21,10 @@
       "deployment_type": "cloud-managed",
       "provider_org": "Anthropic",
       "engine": "",
-      "scale": "",
-      "precision": ""
+      "scale": null,
+      "precision": "",
+      "size_on_disk": null,
+      "model_uri": ""
     }
   },
   {
@@ -31,8 +35,10 @@
       "deployment_type": "self-hosted",
       "provider_org": "Qwen",
       "engine": "LM Studio",
-      "scale": "30B",
-      "precision": "4bit"
+      "scale": 30,
+      "precision": "4bit",
+      "size_on_disk": null,
+      "model_uri": "https://huggingface.co/Qwen/Qwen3-Coder-30B"
     }
   },
   {
@@ -43,8 +49,24 @@
       "deployment_type": "self-hosted",
       "provider_org": "Google",
       "engine": "LM Studio",
-      "scale": "4B",
-      "precision": ""
+      "scale": 4,
+      "precision": "",
+      "size_on_disk": null,
+      "model_uri": "https://huggingface.co/google/gemma-3-4b"
+    }
+  },
+  {
+    "model": "agent.modelidentifier",
+    "pk": 5,
+    "fields": {
+      "name": "lmstudio:openai/gpt-oss-20b",
+      "deployment_type": "self-hosted",
+      "provider_org": "OpenAI",
+      "engine": "LM Studio",
+      "scale": 20,
+      "precision": "MXFP4",
+      "size_on_disk": null,
+      "model_uri": ""
     }
   },
   {
@@ -60,7 +82,7 @@
     "pk": 2,
     "fields": {
       "tool_name": "voter_agent",
-      "model": 4
+      "model": 5
     }
   },
   {
@@ -68,7 +90,7 @@
     "pk": 3,
     "fields": {
       "tool_name": null,
-      "model": 4
+      "model": 5
     }
   }
 ]

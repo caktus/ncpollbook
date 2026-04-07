@@ -2,8 +2,8 @@ from django.db import models
 
 
 class DeploymentType(models.TextChoices):
-    CLOUD_API = "cloud-api", "Cloud API (e.g. OpenAI direct)"
-    CLOUD_MANAGED = "cloud-managed", "Cloud Managed (e.g. AWS Bedrock)"
+    CLOUD_API = "cloud-api", "Cloud API"
+    CLOUD_MANAGED = "cloud-managed", "Cloud Managed"
     SELF_HOSTED = "self-hosted", "Self-Hosted"
 
 
@@ -18,8 +18,17 @@ class ModelIdentifier(models.Model):
     )
     provider_org = models.CharField(max_length=100, blank=True)
     engine = models.CharField(max_length=100, blank=True, help_text="e.g. Ollama, LM Studio")
-    scale = models.CharField(max_length=20, blank=True, help_text="e.g. 7B, 30B, 70B")
+    scale = models.SmallIntegerField(
+        null=True, blank=True, help_text="Billions of parameters, e.g. 7 for 7B, 30 for 30B"
+    )
     precision = models.CharField(max_length=20, blank=True, help_text="e.g. 4bit, fp16")
+    size_on_disk = models.FloatField(null=True, blank=True, help_text="Size on disk in GB")
+    model_uri = models.URLField(
+        max_length=500,
+        blank=True,
+        verbose_name="Model URI",
+        help_text="Reference link for the model, e.g. Hugging Face page or model card URL",
+    )
 
     def __str__(self) -> str:
         return self.name
