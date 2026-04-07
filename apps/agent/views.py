@@ -1,0 +1,165 @@
+"""OpenAI-compatible Chat Completions endpoint for the voter agent.
+
+Allows LibreChat (or any OpenAI-compatible client) to use the voter agent
+as a backend by pointing it at http://<host>/v1 with model "voter-agent".
+
+Endpoints:
+    POST /v1/chat/completions
+    GET  /v1/models
+"""
+
+import json
+import time
+import uuid
+
+from django.conf import settings
+from django.http import HttpRequest, JsonResponse, StreamingHttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
+
+from apps.agent.models import AgentTool
+from apps.agent.sql_agent import get_tool_model, voter_agent
+
+_MODEL_ID = "voter-agent"
+
+
+def _check_api_key(request: HttpRequest) -> JsonResponse | None:
+    """Return a 401 response if AGENT_API_KEY is configured and the request doesn't match."""
+    required = settings.AGENT_API_KEY
+    if not required:
+        return None
+    auth = request.headers.get("Authorization", "")
+    if auth != f"Bearer {required}":
+        return JsonResponse(
+            {"error": {"message": "Invalid API key", "type": "invalid_request_error"}},
+            status=401,
+        )
+    return None
+
+
+def _last_user_message(messages: list[dict]) -> str | None:
+    """Return the content of the last user message, or None if not found."""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            content = msg.get("content", "")
+            if isinstance(content, list):
+                # Handle OpenAI multi-part content: [{"type": "text", "text": "..."}]
+                parts = [p.get("text", "") for p in content if p.get("type") == "text"]
+                return " ".join(parts).strip() or None
+            return str(content).strip() or None
+    return None
+
+
+def _completion_response(answer: str, stream: bool = False) -> dict:
+    """Build an OpenAI-shaped chat.completion response dict."""
+    completion_id = f"chatcmpl-{uuid.uuid4().hex}"
+    created = int(time.time())
+    if stream:
+        return {
+            "id": completion_id,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": _MODEL_ID,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {"role": "assistant", "content": answer},
+                    "finish_reason": None,
+                }
+            ],
+        }
+    return {
+        "id": completion_id,
+        "object": "chat.completion",
+        "created": created,
+        "model": _MODEL_ID,
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": answer},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+    }
+
+
+async def _sse_lines(answer: str) -> str:
+    """Yield SSE-formatted lines for streaming response."""
+    completion_id = f"chatcmpl-{uuid.uuid4().hex}"
+    created = int(time.time())
+
+    def _chunk(delta: dict, finish_reason: str | None) -> str:
+        data = {
+            "id": completion_id,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": _MODEL_ID,
+            "choices": [{"index": 0, "delta": delta, "finish_reason": finish_reason}],
+        }
+        return f"data: {json.dumps(data)}\n\n"
+
+    yield _chunk({"role": "assistant", "content": answer}, None)
+    yield _chunk({}, "stop")
+    yield "data: [DONE]\n\n"
+
+
+@csrf_exempt
+async def chat_completions(request: HttpRequest) -> JsonResponse | StreamingHttpResponse:
+    """POST /v1/chat/completions — OpenAI-compatible chat completions."""
+    if request.method != "POST":
+        return JsonResponse({"error": {"message": "Method not allowed"}}, status=405)
+
+    deny = _check_api_key(request)
+    if deny:
+        return deny
+
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"error": {"message": "Invalid JSON body", "type": "invalid_request_error"}},
+            status=400,
+        )
+
+    messages = body.get("messages", [])
+    question = _last_user_message(messages)
+    if not question:
+        return JsonResponse(
+            {"error": {"message": "No user message found", "type": "invalid_request_error"}},
+            status=400,
+        )
+
+    stream = body.get("stream", False)
+    model = await get_tool_model(AgentTool.VOTER_AGENT)
+    result = await voter_agent.run(question, model=model)
+    answer = result.output
+
+    if stream:
+        return StreamingHttpResponse(
+            _sse_lines(answer),
+            content_type="text/event-stream",
+        )
+    return JsonResponse(_completion_response(answer))
+
+
+@require_GET
+def models_list(request: HttpRequest) -> JsonResponse:
+    """GET /v1/models — returns a static voter-agent model entry."""
+    deny = _check_api_key(request)
+    if deny:
+        return deny
+    now = int(time.time())
+    return JsonResponse(
+        {
+            "object": "list",
+            "data": [
+                {
+                    "id": _MODEL_ID,
+                    "object": "model",
+                    "created": now,
+                    "owned_by": "ncpollbook",
+                }
+            ],
+        }
+    )
