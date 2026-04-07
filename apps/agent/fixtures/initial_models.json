@@ -1,0 +1,74 @@
+[
+  {
+    "model": "agent.modelidentifier",
+    "pk": 1,
+    "fields": {
+      "name": "bedrock:us.anthropic.claude-sonnet-4-6",
+      "deployment_type": "cloud-managed",
+      "provider_org": "Anthropic",
+      "engine": "",
+      "scale": "",
+      "precision": ""
+    }
+  },
+  {
+    "model": "agent.modelidentifier",
+    "pk": 2,
+    "fields": {
+      "name": "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "deployment_type": "cloud-managed",
+      "provider_org": "Anthropic",
+      "engine": "",
+      "scale": "",
+      "precision": ""
+    }
+  },
+  {
+    "model": "agent.modelidentifier",
+    "pk": 3,
+    "fields": {
+      "name": "lmstudio:Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
+      "deployment_type": "self-hosted",
+      "provider_org": "Qwen",
+      "engine": "LM Studio",
+      "scale": "30B",
+      "precision": "4bit"
+    }
+  },
+  {
+    "model": "agent.modelidentifier",
+    "pk": 4,
+    "fields": {
+      "name": "lmstudio:google/gemma-3-4b",
+      "deployment_type": "self-hosted",
+      "provider_org": "Google",
+      "engine": "LM Studio",
+      "scale": "4B",
+      "precision": ""
+    }
+  },
+  {
+    "model": "agent.toolmodel",
+    "pk": 1,
+    "fields": {
+      "tool_name": "sql_gen",
+      "model": 2
+    }
+  },
+  {
+    "model": "agent.toolmodel",
+    "pk": 2,
+    "fields": {
+      "tool_name": "voter_agent",
+      "model": 4
+    }
+  },
+  {
+    "model": "agent.toolmodel",
+    "pk": 3,
+    "fields": {
+      "tool_name": null,
+      "model": 4
+    }
+  }
+]

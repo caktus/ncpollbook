@@ -9,7 +9,8 @@ class TestModelIdentifierAdmin:
 
     def test_list_display(self):
         ma = admin.site._registry[ModelIdentifier]
-        assert "name" in ma.list_display
+        for field in ("name", "deployment_type", "provider_org", "engine", "scale", "precision"):
+            assert field in ma.list_display
 
     def test_search_fields(self):
         ma = admin.site._registry[ModelIdentifier]
