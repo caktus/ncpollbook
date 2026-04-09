@@ -169,6 +169,12 @@ class TestResolveModel:
         assert isinstance(result, OpenAIChatModel)
         assert _LM_STUDIO_BASE_URL in str(result.client.base_url)
 
+    def test_anthropic_prefix_returned_as_string(self):
+        assert (
+            resolve_model("anthropic:claude-haiku-4-5-20251001")
+            == "anthropic:claude-haiku-4-5-20251001"
+        )
+
 
 class TestGetToolModel:
     @pytest.mark.django_db
