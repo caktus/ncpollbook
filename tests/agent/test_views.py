@@ -1,5 +1,5 @@
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from asgiref.sync import async_to_sync
@@ -76,11 +76,18 @@ class TestBuildQuestion:
 
     @pytest.mark.django_db
     def test_streaming_returns_event_stream(self, client):
+        async def _fake_stream_text(delta=False):
+            yield "42 active voters."
+
+        mock_run = AsyncMock()
+        mock_run.stream_text = _fake_stream_text
+
+        mock_run_stream = MagicMock()
+        mock_run_stream.__aenter__ = AsyncMock(return_value=mock_run)
+        mock_run_stream.__aexit__ = AsyncMock(return_value=False)
+
         with (
-            patch(
-                "apps.agent.views.voter_agent.run",
-                AsyncMock(return_value=AsyncMock(output="42 active voters.")),
-            ),
+            patch("apps.agent.views.voter_agent.run_stream", return_value=mock_run_stream),
             patch(
                 "apps.agent.views.get_tool_model",
                 AsyncMock(return_value="openai:gpt-4o-mini"),
@@ -91,12 +98,14 @@ class TestBuildQuestion:
                 data=json.dumps({"messages": _MESSAGES, "stream": True}),
                 content_type="application/json",
             )
-        assert resp.status_code == 200
-        assert "text/event-stream" in resp["Content-Type"]
-        # streaming_content is an async generator; collect it synchronously via Django's helper
-        chunks = async_to_sync(lambda: _collect_async(resp.streaming_content))()
+            assert resp.status_code == 200
+            assert "text/event-stream" in resp["Content-Type"]
+            # Consume streaming_content inside the patch block — the generator
+            # is lazy and only runs when iterated, so patches must still be active.
+            chunks = async_to_sync(lambda: _collect_async(resp.streaming_content))()
+
         body = b"".join(chunks).decode()
-        assert "data:" in body
+        assert "42 active voters." in body
         assert "[DONE]" in body
 
     @pytest.mark.django_db

@@ -11,6 +11,7 @@ Endpoints:
 import json
 import time
 import uuid
+from collections.abc import AsyncGenerator
 
 from django.conf import settings
 from django.http import HttpRequest, JsonResponse, StreamingHttpResponse
@@ -114,8 +115,8 @@ def _completion_response(answer: str, stream: bool = False) -> dict:
     }
 
 
-async def _sse_lines(answer: str) -> str:
-    """Yield SSE-formatted lines for streaming response."""
+async def _sse_stream(question: str, model: str) -> AsyncGenerator[str]:
+    """Async generator yielding SSE chunks for real token streaming."""
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
 
@@ -129,7 +130,10 @@ async def _sse_lines(answer: str) -> str:
         }
         return f"data: {json.dumps(data)}\n\n"
 
-    yield _chunk({"role": "assistant", "content": answer}, None)
+    yield _chunk({"role": "assistant", "content": ""}, None)
+    async with voter_agent.run_stream(question, model=model) as run:
+        async for delta in run.stream_text(delta=True):
+            yield _chunk({"content": delta}, None)
     yield _chunk({}, "stop")
     yield "data: [DONE]\n\n"
 
@@ -162,14 +166,15 @@ async def chat_completions(request: HttpRequest) -> JsonResponse | StreamingHttp
 
     stream = body.get("stream", False)
     model = await get_tool_model(AgentTool.VOTER_AGENT)
-    result = await voter_agent.run(question, model=model)
-    answer = result.output
 
     if stream:
         return StreamingHttpResponse(
-            _sse_lines(answer),
+            _sse_stream(question, model),
             content_type="text/event-stream",
         )
+
+    result = await voter_agent.run(question, model=model)
+    answer = result.output
     return JsonResponse(_completion_response(answer))
 
 
