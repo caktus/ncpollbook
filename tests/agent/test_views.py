@@ -79,15 +79,30 @@ class TestBuildQuestion:
         async def _fake_stream_text(delta=False):
             yield "42 active voters."
 
-        mock_run = AsyncMock()
-        mock_run.stream_text = _fake_stream_text
+        mock_stream_cm = MagicMock()
+        mock_stream_cm.__aenter__ = AsyncMock(return_value=MagicMock(stream_text=_fake_stream_text))
+        mock_stream_cm.__aexit__ = AsyncMock(return_value=False)
 
-        mock_run_stream = MagicMock()
-        mock_run_stream.__aenter__ = AsyncMock(return_value=mock_run)
-        mock_run_stream.__aexit__ = AsyncMock(return_value=False)
+        mock_node = MagicMock()
+        mock_node.stream = MagicMock(return_value=mock_stream_cm)
+
+        async def _fake_nodes():
+            yield mock_node
+
+        mock_agent_run = MagicMock()
+        mock_agent_run.__aiter__ = MagicMock(return_value=_fake_nodes())
+        mock_agent_run.ctx = MagicMock()
+
+        mock_iter_cm = MagicMock()
+        mock_iter_cm.__aenter__ = AsyncMock(return_value=mock_agent_run)
+        mock_iter_cm.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("apps.agent.views.voter_agent.run_stream", return_value=mock_run_stream),
+            patch("apps.agent.views.voter_agent.iter", return_value=mock_iter_cm),
+            patch(
+                "apps.agent.views.voter_agent.is_model_request_node",
+                MagicMock(return_value=True),
+            ),
             patch(
                 "apps.agent.views.get_tool_model",
                 AsyncMock(return_value="openai:gpt-4o-mini"),

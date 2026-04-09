@@ -131,9 +131,12 @@ async def _sse_stream(question: str, model: str) -> AsyncGenerator[str]:
         return f"data: {json.dumps(data)}\n\n"
 
     yield _chunk({"role": "assistant", "content": ""}, None)
-    async with voter_agent.run_stream(question, model=model) as run:
-        async for delta in run.stream_text(delta=True):
-            yield _chunk({"content": delta}, None)
+    async with voter_agent.iter(question, model=model) as agent_run:
+        async for node in agent_run:
+            if voter_agent.is_model_request_node(node):
+                async with node.stream(agent_run.ctx) as stream:
+                    async for delta in stream.stream_text(delta=True):
+                        yield _chunk({"content": delta}, None)
     yield _chunk({}, "stop")
     yield "data: [DONE]\n\n"
 
