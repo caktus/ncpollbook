@@ -2,7 +2,7 @@ name: docker-publish
 
 on:
   push:
-    branches: [main]
+    branches: [main, bolt-and-docker]
     # Publish semver tags as releases.
     tags: ["v*.*.*"]
 
