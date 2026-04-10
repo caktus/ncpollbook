@@ -4,8 +4,8 @@ These tests use LLMJudge to evaluate response quality for subjective
 properties that can't be checked deterministically, such as relevance,
 helpfulness, and absence of PII.
 
-Requires the LLM_JUDGE_MODEL environment variable to be set, e.g.:
-    LLM_JUDGE_MODEL=ollama:llama3.1 uv run pytest -m llm
+Uses LLM_JUDGE_MODEL=lmstudio:mistralai/ministral-3-3b by default.
+Override with the LLM_JUDGE_MODEL environment variable.
 
 Run only these tests:  uv run pytest -m llm
 Skip in fast runs:     uv run pytest -m 'not llm'
@@ -23,16 +23,11 @@ from apps.agent.sql_agent import resolve_model
 # Judge model resolved from environment
 # ---------------------------------------------------------------------------
 
-_LLM_JUDGE_MODEL_STR: str | None = os.environ.get("LLM_JUDGE_MODEL")
-_LLM_JUDGE_MODEL = resolve_model(_LLM_JUDGE_MODEL_STR) if _LLM_JUDGE_MODEL_STR else None
+_DEFAULT_JUDGE_MODEL = "lmstudio:mistralai/ministral-3-3b"
+_LLM_JUDGE_MODEL_STR: str = os.environ.get("LLM_JUDGE_MODEL", _DEFAULT_JUDGE_MODEL)
+_LLM_JUDGE_MODEL = resolve_model(_LLM_JUDGE_MODEL_STR)
 
-pytestmark = [
-    pytest.mark.llm,
-    pytest.mark.skipif(
-        not _LLM_JUDGE_MODEL_STR,
-        reason="LLM_JUDGE_MODEL environment variable not set",
-    ),
-]
+pytestmark = pytest.mark.llm
 
 # ---------------------------------------------------------------------------
 # Fixtures: canned outputs that the judge evaluates
