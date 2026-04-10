@@ -43,7 +43,7 @@ class TestAgentModelsFixture:
     @pytest.mark.django_db
     def test_fixture_loads_successfully(self):
         call_command("loaddata", "agent_models", verbosity=0)
-        assert ModelIdentifier.objects.count() == 5
+        assert ModelIdentifier.objects.count() == 9
         assert ToolModel.objects.count() == 3
 
     @pytest.mark.django_db
