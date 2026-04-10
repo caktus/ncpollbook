@@ -27,6 +27,7 @@ This is a web application for importing and searching voter registration and his
 ### Testing
 
 - Run tests with pytest: `uv run pytest`
+- Run LLM eval tests: `uv run pytest -m llm` (uses `LLM_JUDGE_MODEL=lmstudio:mistralai/ministral-3-3b` by default)
 - Tests are located in the `tests/` directory and follow standard pytest-django and pytest-mock conventions.
 - factoryboy is used for test data creation.
 - **Efficient Testing:** Test filters, models, and business logic directly using filtersets or model methods rather than making HTTP requests to views. Use one focused smoke test for end-to-end integration verification. This dramatically improves test speed (view tests are 3-5x slower than unit tests).
@@ -50,4 +51,4 @@ This is a web application for importing and searching voter registration and his
 ### Agent Workflow
 
 - Always maintain a detailed todo/checklist list.
-- Always run full test suite and ruff pre-commit hooks as the last tasks in your todo list.
+- Always run full test suite (`uv run pytest`) and LLM evals (`uv run pytest -m llm`) and ruff pre-commit hooks as the last tasks in your todo list.
