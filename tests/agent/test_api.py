@@ -90,6 +90,52 @@ class TestChatCompletions:
         assert "[DONE]" in "".join(chunks)
 
     @pytest.mark.django_db
+    def test_streaming_yields_content_delta(self):
+        """Agent token deltas are forwarded through the asyncio.Queue to the SSE stream."""
+        mock_stream = MagicMock()
+
+        async def fake_deltas():
+            yield "Hello"
+
+        mock_stream.stream_text = MagicMock(return_value=fake_deltas())
+
+        stream_cm = MagicMock()
+        stream_cm.__aenter__ = AsyncMock(return_value=mock_stream)
+        stream_cm.__aexit__ = AsyncMock(return_value=False)
+
+        mock_node = MagicMock()
+        mock_node.stream = MagicMock(return_value=stream_cm)
+
+        async def fake_nodes():
+            yield mock_node
+
+        mock_agent_run = MagicMock()
+        mock_agent_run.__aiter__ = MagicMock(return_value=fake_nodes())
+        mock_agent_run.ctx = MagicMock()
+
+        mock_iter_cm = MagicMock()
+        mock_iter_cm.__aenter__ = AsyncMock(return_value=mock_agent_run)
+        mock_iter_cm.__aexit__ = AsyncMock(return_value=False)
+
+        with (
+            patch("apps.agent.api.voter_agent.iter", return_value=mock_iter_cm),
+            patch("apps.agent.api.voter_agent.is_model_request_node", return_value=True),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+            TestClient(api) as client,
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                json={"messages": _MESSAGES, "stream": True},
+                stream=True,
+            )
+            assert resp.status_code == 200
+            chunks = list(resp.iter_content(chunk_size=4096, decode_unicode=True))
+
+        body = "".join(chunks)
+        assert "Hello" in body
+        assert "[DONE]" in body
+
+    @pytest.mark.django_db
     def test_missing_user_message_returns_400(self):
         with TestClient(api) as client:
             resp = client.post(

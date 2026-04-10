@@ -12,6 +12,7 @@ Endpoints:
     GET  /ready
 """
 
+import asyncio
 import json
 import time
 import uuid
@@ -114,7 +115,14 @@ def _completion_response(answer: str) -> dict:
 
 
 async def _sse_stream(question: str, model: str) -> AsyncGenerator[bytes]:
-    """Async generator yielding SSE chunks for real token streaming."""
+    """Async generator yielding SSE chunks for real token streaming.
+
+    The agent run is isolated inside a dedicated asyncio Task so that anyio
+    cancel scopes (created by pydantic-graph internally) are always entered
+    and exited within the same task.  Without this isolation, the ASGI layer
+    can drive the generator from a different task, triggering:
+        RuntimeError: Attempted to exit cancel scope in a different task
+    """
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
 
@@ -128,13 +136,27 @@ async def _sse_stream(question: str, model: str) -> AsyncGenerator[bytes]:
         }
         return f"data: {json.dumps(data)}\n\n".encode()
 
+    queue: asyncio.Queue[bytes | None] = asyncio.Queue()
+
+    async def _collect() -> None:
+        try:
+            async with voter_agent.iter(question, model=model) as agent_run:
+                async for node in agent_run:
+                    if voter_agent.is_model_request_node(node):
+                        async with node.stream(agent_run.ctx) as stream:
+                            async for delta in stream.stream_text(delta=True):
+                                await queue.put(_chunk({"content": delta}, None))
+        finally:
+            await queue.put(None)  # sentinel — always sent even on error
+
+    task = asyncio.create_task(_collect())
     yield _chunk({"role": "assistant", "content": ""}, None)
-    async with voter_agent.iter(question, model=model) as agent_run:
-        async for node in agent_run:
-            if voter_agent.is_model_request_node(node):
-                async with node.stream(agent_run.ctx) as stream:
-                    async for delta in stream.stream_text(delta=True):
-                        yield _chunk({"content": delta}, None)
+    while True:
+        chunk = await queue.get()
+        if chunk is None:
+            break
+        yield chunk
+    await task  # re-raise any exception from _collect
     yield _chunk({}, "stop")
     yield b"data: [DONE]\n\n"
 
