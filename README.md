@@ -2,6 +2,7 @@
 # NC Pollbook
 
 [![tests](https://github.com/caktus/ncpollbook/actions/workflows/tests.yml/badge.svg)](https://github.com/caktus/ncpollbook/actions/workflows/tests.yml)
+[![docker-publish](https://github.com/caktus/ncpollbook/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/caktus/ncpollbook/actions/workflows/docker-publish.yml)
 
 NC Pollbook is an exploratory Django web app for importing, loading, and analyzing North Carolina State Board of Elections (NCSBE) voter registration and history data with LLMs.
 
