@@ -43,7 +43,7 @@ class TestAgentModelsFixture:
     @pytest.mark.django_db
     def test_fixture_loads_successfully(self):
         call_command("loaddata", "agent_models", verbosity=0)
-        assert ModelIdentifier.objects.count() == 9
+        assert ModelIdentifier.objects.count() == 10
         assert ToolModel.objects.count() == 3
 
     @pytest.mark.django_db
@@ -52,4 +52,4 @@ class TestAgentModelsFixture:
         sql_gen = ToolModel.objects.get(tool_name=AgentTool.SQL_GEN)
         assert "claude-haiku" in sql_gen.model.name
         voter = ToolModel.objects.get(tool_name=AgentTool.VOTER_AGENT)
-        assert "gemma" in voter.model.name
+        assert "mistral" in voter.model.name

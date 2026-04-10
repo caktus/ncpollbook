@@ -126,6 +126,20 @@
   }
 },
 {
+  "model": "agent.modelidentifier",
+  "pk": 10,
+  "fields": {
+    "name": "lmstudio:mistralai/ministral-3-3b",
+    "deployment_type": "self-hosted",
+    "provider_org": "Mistral",
+    "engine": "LM Studio",
+    "scale": 3,
+    "precision": "Q4_K_M",
+    "size_on_disk": 3.0,
+    "model_uri": "https://lmstudio.ai/models/mistralai/ministral-3-3b"
+  }
+},
+{
   "model": "agent.toolmodel",
   "pk": 1,
   "fields": {
@@ -138,7 +152,7 @@
   "pk": 2,
   "fields": {
     "tool_name": "voter_agent",
-    "model": 4
+    "model": 10
   }
 },
 {
@@ -146,7 +160,7 @@
   "pk": 3,
   "fields": {
     "tool_name": null,
-    "model": 5
+    "model": 9
   }
 }
 ]
