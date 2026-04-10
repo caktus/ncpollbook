@@ -165,6 +165,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "apps.agent.api": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
     },
 }
 

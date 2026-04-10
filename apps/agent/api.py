@@ -12,8 +12,8 @@ Endpoints:
     GET  /ready
 """
 
-import asyncio
 import json
+import logging
 import time
 import uuid
 from collections.abc import AsyncGenerator
@@ -25,11 +25,14 @@ from django_bolt.auth import AllowAny, APIKeyAuthentication, IsAuthenticated
 from django_bolt.exceptions import BadRequest
 from django_bolt.health import register_health_checks
 from django_bolt.responses import StreamingResponse
+from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, TextPart, UserPromptPart
 
 from apps.agent.models import AgentTool
 from apps.agent.sql_agent import get_tool_model, voter_agent
 
 _MODEL_ID = "voter-agent"
+
+logger = logging.getLogger(__name__)
 
 # Build auth from AGENT_API_KEY at startup. Bolt strips the "Bearer " prefix
 # automatically when comparing Authorization header values, so api_keys holds the raw key.
@@ -63,37 +66,33 @@ def _extract_text(content: str | list) -> str:
     return str(content).strip()
 
 
-def _build_question(messages: list[Message]) -> str | None:
-    """Build a question from the message history.
+def _parse_messages(messages: list[Message]) -> tuple[str, list[ModelMessage]]:
+    """Return (user_prompt, message_history) for pydantic-ai.
 
-    When there is only one user turn, returns it as-is.
-    When there are multiple turns, prepends prior conversation as context so
-    the agent can answer follow-up questions correctly.
+    The last user message becomes the prompt; prior user/assistant turns are
+    passed as structured ModelMessage history so the model sees proper
+    conversation turns rather than a flattened text blob.
     """
-    question = None
-    for msg in reversed(messages):
-        if msg.role == "user":
-            question = _extract_text(msg.content)
-            break
-    if not question:
-        return None
+    last_user_idx = next(
+        (i for i in range(len(messages) - 1, -1, -1) if messages[i].role == "user"),
+        None,
+    )
+    if last_user_idx is None:
+        return "", []
 
-    prior = messages[:-1]
-    if not any(m.role == "user" for m in prior):
-        return question
+    user_prompt = _extract_text(messages[last_user_idx].content)
 
-    context_lines = []
-    for msg in prior:
+    history: list[ModelMessage] = []
+    for msg in messages[:last_user_idx]:
         text = _extract_text(msg.content)
-        if msg.role in ("user", "assistant") and text:
-            label = "User" if msg.role == "user" else "Assistant"
-            context_lines.append(f"{label}: {text}")
+        if not text:
+            continue
+        if msg.role == "user":
+            history.append(ModelRequest(parts=[UserPromptPart(content=text)]))
+        elif msg.role == "assistant":
+            history.append(ModelResponse(parts=[TextPart(content=text)]))
 
-    if not context_lines:
-        return question
-
-    context = "\n".join(context_lines)
-    return f"Conversation so far:\n{context}\n\nCurrent question: {question}"
+    return user_prompt, history
 
 
 def _completion_response(answer: str) -> dict:
@@ -114,15 +113,10 @@ def _completion_response(answer: str) -> dict:
     }
 
 
-async def _sse_stream(question: str, model: str) -> AsyncGenerator[bytes]:
-    """Async generator yielding SSE chunks for real token streaming.
-
-    The agent run is isolated inside a dedicated asyncio Task so that anyio
-    cancel scopes (created by pydantic-graph internally) are always entered
-    and exited within the same task.  Without this isolation, the ASGI layer
-    can drive the generator from a different task, triggering:
-        RuntimeError: Attempted to exit cancel scope in a different task
-    """
+async def _sse_stream(
+    question: str, model: str, history: list[ModelMessage]
+) -> AsyncGenerator[bytes]:
+    """Async generator yielding SSE chunks for real token streaming."""
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
 
@@ -136,27 +130,12 @@ async def _sse_stream(question: str, model: str) -> AsyncGenerator[bytes]:
         }
         return f"data: {json.dumps(data)}\n\n".encode()
 
-    queue: asyncio.Queue[bytes | None] = asyncio.Queue()
-
-    async def _collect() -> None:
-        try:
-            async with voter_agent.iter(question, model=model) as agent_run:
-                async for node in agent_run:
-                    if voter_agent.is_model_request_node(node):
-                        async with node.stream(agent_run.ctx) as stream:
-                            async for delta in stream.stream_text(delta=True):
-                                await queue.put(_chunk({"content": delta}, None))
-        finally:
-            await queue.put(None)  # sentinel — always sent even on error
-
-    task = asyncio.create_task(_collect())
     yield _chunk({"role": "assistant", "content": ""}, None)
-    while True:
-        chunk = await queue.get()
-        if chunk is None:
-            break
-        yield chunk
-    await task  # re-raise any exception from _collect
+    async with voter_agent.run_stream(
+        question, model=model, message_history=history or None
+    ) as result:
+        async for delta in result.stream_text(delta=True):
+            yield _chunk({"content": delta}, None)
     yield _chunk({}, "stop")
     yield b"data: [DONE]\n\n"
 
@@ -170,16 +149,19 @@ async def chat_completions(
 ):
     """POST /v1/chat/completions — OpenAI-compatible chat completions."""
 
-    question = _build_question(body.messages)
-    if not question:
+    logger.debug("chat_completions messages: %s", body.messages)
+    user_prompt, history = _parse_messages(body.messages)
+    if not user_prompt:
         raise BadRequest(detail="No user message found")
 
     model = await get_tool_model(AgentTool.VOTER_AGENT)
 
     if body.stream:
-        return StreamingResponse(_sse_stream(question, model), media_type="text/event-stream")
+        return StreamingResponse(
+            _sse_stream(user_prompt, model, history), media_type="text/event-stream"
+        )
 
-    result = await voter_agent.run(question, model=model)
+    result = await voter_agent.run(user_prompt, model=model, message_history=history or None)
     return _completion_response(result.output)
 
 
