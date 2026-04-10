@@ -49,6 +49,31 @@ uv run manage.py ncsbe peek
 
 Data is cached in `scratch/data/` after the first download.
 
+## SQL Agent (OpenAI-Compatible API)
+
+An OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`) served by [django-bolt](https://bolt.farhana.li/).
+Point LibreChat or any OpenAI-compatible client at `http://<host>:8001/v1` with model `voter-agent`.
+
+Optionally protect the API with an API key by setting `AGENT_API_KEY` in the environment. Clients
+send it as `Authorization: Bearer <key>`.
+
+```bash
+# Start the async API server (auto-discovers apps/agent/views.py)
+uv run manage.py runbolt --dev
+
+# Health endpoints (no auth required)
+# GET /health  — liveness probe
+# GET /ready   — readiness probe with service checks
+```
+
+The default development port is `8000`. The Django admin can be run simultaneously on a different
+port if needed:
+
+```bash
+uv run manage.py runserver 8001  # Django admin
+uv run manage.py runbolt --dev   # bolt API on 8000
+```
+
 ## SQL Agent (Web Chat UI)
 
 An AI agent can query the `VoterView` and `VoterEventView` materialized views via natural language.
