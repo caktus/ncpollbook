@@ -12,6 +12,25 @@ wheels = [
 ]
 
 [[package]]
+name = "anthropic"
+version = "0.92.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "distro" },
+    { name = "docstring-parser" },
+    { name = "httpx" },
+    { name = "jiter" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/01/2d/fc5c5a369db977efbaa646d77ba42b38a6de4e95789884032b0e2e3fc834/anthropic-0.92.0.tar.gz", hash = "sha256:d1e792ed0692379452a1af6b266df495e973c3695cd0aace2a108b838393cbc4", size = 652420, upload-time = "2026-04-08T16:55:35.37Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c3/21/bf5b5ab10b6932c5c43eaa66b6e3f256de569cf0323d89f9cc281a0d0f39/anthropic-0.92.0-py3-none-any.whl", hash = "sha256:f92a4bd065d5cab90a96b65bb44e473bf7c6fe731a743cd156e9ad1d245c381e", size = 621195, upload-time = "2026-04-08T16:55:33.639Z" },
+]
+
+[[package]]
 name = "anyio"
 version = "4.13.0"
 source = { registry = "https://pypi.org/simple" }
@@ -206,6 +225,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/bc/c3/66461dc9a1567914d8501d217976885d9fbac3dd4d3602abf8ceec95f6bd/django_pgviews_redux-1.2.0.tar.gz", hash = "sha256:ae1a6d8d44ae8c0e96e3c4ed498f6133f0eb1dde36484a60ab502a16db845d7f", size = 25755, upload-time = "2026-03-11T10:59:29.374Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/84/99/b799254874d4b1e8c34831104a16c686d03ea7126aa7c90a7bd60c9359b1/django_pgviews_redux-1.2.0-py3-none-any.whl", hash = "sha256:597a387dd66f2f46fb078c5d97d04344094f6a6044a8399401054c5a2873ccca", size = 29379, upload-time = "2026-03-11T10:59:27.104Z" },
+]
+
+[[package]]
+name = "docstring-parser"
+version = "0.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/9d/c3b43da9515bd270df0f80548d9944e389870713cc1fe2b8fb35fe2bcefd/docstring_parser-0.17.0.tar.gz", hash = "sha256:583de4a309722b3315439bb31d64ba3eebada841f2e2cee23b99df001434c912", size = 27442, upload-time = "2025-07-21T07:35:01.868Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/55/e2/2537ebcff11c1ee1ff17d8d0b6f4db75873e3b0fb32c2d4a2ee31ecb310a/docstring_parser-0.17.0-py3-none-any.whl", hash = "sha256:cf2569abd23dce8099b300f9b4fa8191e9582dda731fd533daf54c4551658708", size = 36896, upload-time = "2025-07-21T07:35:00.684Z" },
 ]
 
 [[package]]
@@ -742,6 +770,9 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+anthropic = [
+    { name = "anthropic" },
+]
 openai = [
     { name = "openai" },
     { name = "tiktoken" },
@@ -1195,7 +1226,7 @@ dependencies = [
     { name = "logfire", extra = ["psycopg"] },
     { name = "polars" },
     { name = "psycopg" },
-    { name = "pydantic-ai-slim", extra = ["openai", "web"] },
+    { name = "pydantic-ai-slim", extra = ["anthropic", "openai", "web"] },
     { name = "pydantic-monty" },
 ]
 
@@ -1221,7 +1252,7 @@ requires-dist = [
     { name = "logfire", extras = ["psycopg"], specifier = ">=4.30.0" },
     { name = "polars", specifier = ">=1.39.3" },
     { name = "psycopg", specifier = ">=3.3.3" },
-    { name = "pydantic-ai-slim", extras = ["openai", "web"], specifier = ">=1.70.0" },
+    { name = "pydantic-ai-slim", extras = ["anthropic", "openai", "web"], specifier = ">=1.70.0" },
     { name = "pydantic-monty", specifier = ">=0.0.8" },
 ]
 

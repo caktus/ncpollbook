@@ -174,6 +174,11 @@ voter_agent_dataset: Dataset[str, str, None] = Dataset(
             evaluators=[HasSqlCodeBlock()],
         ),
         Case(
+            name="recent_primary_turnout",
+            inputs="What was the 2026 primary turnout in Durham?",
+            evaluators=[HasSqlCodeBlock()],
+        ),
+        Case(
             name="off_topic",
             inputs="What is the capital of France?",
         ),
@@ -183,7 +188,10 @@ voter_agent_dataset: Dataset[str, str, None] = Dataset(
 
 def _simulated_voter_task(question: str) -> str:
     """Simulate voter_agent responses for deterministic eval testing."""
-    if any(w in question.lower() for w in ("voter", "party", "election", "county")):
+    if any(
+        w in question.lower()
+        for w in ("voter", "party", "election", "county", "primary", "turnout")
+    ):
         return _SQL_RESPONSE
     return _TEXT_RESPONSE
 

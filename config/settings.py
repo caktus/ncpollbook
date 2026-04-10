@@ -28,7 +28,7 @@ SECRET_KEY = "django-insecure-%xi=!gxutp!@-y8oj3n0*7rh@4qmcrg@4*#vig131#vh1-ikdg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
 
 # Application definition
@@ -95,6 +95,11 @@ MATERIALIZED_VIEWS_CHECK_SQL_CHANGED = True
 #   When migrate is run, new views will not be created automatically, and existing
 #   views will not be recreated even if their SQL definition has changed.
 MATERIALIZED_VIEWS_DISABLE_SYNC_ON_MIGRATE = True
+
+# OpenAI-compatible chat completions endpoint (apps/agent/views.py)
+# If set, requests must include "Authorization: Bearer <key>".
+# Leave empty to allow unauthenticated access (local dev default).
+AGENT_API_KEY = os.environ.get("AGENT_API_KEY", "")
 
 
 # Password validation

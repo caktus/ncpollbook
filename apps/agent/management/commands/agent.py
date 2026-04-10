@@ -14,7 +14,7 @@ import asyncio
 import djclick as click
 
 from apps.agent.cli import main as _cli_main
-from apps.agent.sql_agent import _sql_system_prompt, voter_agent
+from apps.agent.sql_agent import _sql_system_prompt, _voter_system_prompt
 
 
 @click.group()
@@ -39,7 +39,7 @@ def prompts(name: str | None) -> None:
         if name is None:
             click.echo()
         click.secho("=== voter_agent instructions ===", bold=True)
-        click.echo("\n".join(voter_agent._instructions))
+        click.echo(_voter_system_prompt())
 
 
 @command.command()

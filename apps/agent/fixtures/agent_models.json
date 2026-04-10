@@ -70,6 +70,62 @@
   }
 },
 {
+  "model": "agent.modelidentifier",
+  "pk": 6,
+  "fields": {
+    "name": "lmstudio:google/gemma-4-e4b",
+    "deployment_type": "self-hosted",
+    "provider_org": "Google",
+    "engine": "LM Studio",
+    "scale": 7,
+    "precision": "Q4_K_M",
+    "size_on_disk": 6.33,
+    "model_uri": "https://lmstudio.ai/models/google/gemma-4-e4b"
+  }
+},
+{
+  "model": "agent.modelidentifier",
+  "pk": 7,
+  "fields": {
+    "name": "lmstudio:google/gemma-4-26b-a4b",
+    "deployment_type": "self-hosted",
+    "provider_org": "Google",
+    "engine": "LM Studio",
+    "scale": 26,
+    "precision": "Q4_K_M",
+    "size_on_disk": 17.99,
+    "model_uri": "https://lmstudio.ai/models/google/gemma-4-26b-a4b"
+  }
+},
+{
+  "model": "agent.modelidentifier",
+  "pk": 8,
+  "fields": {
+    "name": "anthropic:claude-haiku-4-5-20251001",
+    "deployment_type": "cloud-api",
+    "provider_org": "Anthropic",
+    "engine": "",
+    "scale": null,
+    "precision": "",
+    "size_on_disk": null,
+    "model_uri": "https://platform.claude.com/docs/en/about-claude/models/overview"
+  }
+},
+{
+  "model": "agent.modelidentifier",
+  "pk": 9,
+  "fields": {
+    "name": "anthropic:claude-sonnet-4-6",
+    "deployment_type": "cloud-api",
+    "provider_org": "Anthropic",
+    "engine": "",
+    "scale": null,
+    "precision": "",
+    "size_on_disk": null,
+    "model_uri": "https://platform.claude.com/docs/en/about-claude/models/overview"
+  }
+},
+{
   "model": "agent.toolmodel",
   "pk": 1,
   "fields": {
