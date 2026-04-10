@@ -1,0 +1,78 @@
+---
+- hosts: k8s_vms
+  become: yes
+  tasks:
+    - name: Create directory for MicroK8s config
+      ansible.builtin.file:
+        path: /var/snap/microk8s/common
+        state: directory
+        mode: "0755"
+
+    - name: Set MicroK8s default config
+      ansible.builtin.template:
+        src: templates/microk8s.default.yaml
+        dest: /var/snap/microk8s/common/.microk8s.yaml
+        mode: "0644"
+
+    - name: Install MicroK8s
+      snap:
+        name: microk8s
+        classic: yes
+        channel: "{{ microk8s_channel }}"
+
+    - name: Creates .kube directory
+      ansible.builtin.file:
+        path: .kube
+        state: directory
+      delegate_to: localhost
+      become: false
+
+    - name: microk8s kubeconfig
+      run_once: true
+      block:
+        - name: Retrieve the client config
+          ansible.builtin.command:
+            cmd: microk8s config --use-loopback
+          register: kube_conf
+
+        - name: Create local kubeconfig
+          ansible.builtin.copy:
+            content: "{{ kube_conf.stdout | replace('127.0.0.1', ansible_facts['hostname']) }}"
+            dest: ".kube/config-ncpollbook"
+            mode: 0600
+          delegate_to: localhost
+          become: false
+
+- hosts: k8s_api
+  tags: k8s
+  tasks:
+    # https://github.com/canonical/microk8s/issues/4864
+    - name: Create Cloudflared namespace
+      kubernetes.core.k8s:
+        # context: "{{ k8s_context|mandatory }}"
+        # kubeconfig: "{{ k8s_kubeconfig }}"
+        name: "{{ k8s_cloudflare_namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+    - name: Apply Cloudflared Helm chart
+      kubernetes.core.helm:
+        # context: "{{ k8s_context|mandatory }}"
+        # kubeconfig: "{{ k8s_kubeconfig }}"
+        chart_repo_url: https://community-charts.github.io/helm-charts
+        chart_ref: cloudflared
+        chart_version: "{{ k8s_cloudflare_chart_version }}"
+        release_name: "cloudflared"
+        release_namespace: "{{ k8s_cloudflare_namespace }}"
+        release_values: "{{ k8s_cloudflare_release_values }}"
+        wait: yes
+
+    - name: Apply httpbin Helm chart
+      kubernetes.core.helm:
+        # context: "{{ k8s_context|mandatory }}"
+        # kubeconfig: "{{ k8s_kubeconfig }}"
+        chart_repo_url: https://matheusfm.dev/charts
+        chart_ref: httpbin
+        release_name: "httpbin"
+        release_namespace: "{{ k8s_cloudflare_namespace }}"
+        wait: yes

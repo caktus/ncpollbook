@@ -18,9 +18,17 @@ dependencies = [
     "psycopg>=3.3.3",
     "pydantic-ai-slim[anthropic,openai,web]>=1.70.0",
     "pydantic-monty>=0.0.8",
+    # Python 3.14 is not supported by urllib3 2.4.0
+    # https://github.com/crate/crate-python/issues/708
+    # https://github.com/aws/containers-roadmap/issues/2638
+    "urllib3<2.4.0",
 ]
 
 [dependency-groups]
+deploy = [
+    "ansible>=13.5.0",
+    "kubernetes>=35.0.0",
+]
 dev = [
     "factory-boy>=3.3.3",
     "pre-commit>=4.5.1",
@@ -63,7 +71,7 @@ ignore = [
 known-first-party = ["apps", "config"]
 
 [tool.uv]
-default-groups = ["dev"]
+default-groups = ["dev", "deploy"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"

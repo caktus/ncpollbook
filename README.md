@@ -20,6 +20,7 @@ Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialize
 - [SQL Agent (Web Chat UI)](#sql-agent-web-chat-ui)
 - [SQL Agent (CLI)](#sql-agent-cli)
 - [Docker Deployment](#docker-deployment)
+- [Framework Desktop Deployment](#framework-desktop-deployment)
 - [Development](#development)
 
 ## Setup
@@ -176,6 +177,30 @@ COMPOSE_FILE=docker-compose.deploy.yaml docker compose up -d
 
 Edit `docker-compose.deploy.env` to set `DJANGO_SECRET_KEY`, database credentials,
 and any model provider API keys before deploying.
+
+## Framework Desktop Deployment
+
+```sh
+ssh framework1
+multipass launch --name ncpollbook --cpus=16 --memory=32G --disk=200G
+multipass shell ncpollbook
+```
+
+navigate to Tailscale admin console and add a new linux server
+```sh
+echo "export KUBECONFIG=$PWD/deployment/.kube/config-ncpollbook" >> .envrc
+direnv allow
+```
+
+https://canonical.com/microk8s/docs/ref-launch-config
+https://canonical.com/microk8s/docs/add-launch-config
+
+```sh
+cd deployment/
+ansible-playbook setup.yaml
+```
+
+
 
 ## Development
 
