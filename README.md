@@ -11,6 +11,10 @@ Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialize
 
 - [Setup](#setup)
 - [Loading Data](#loading-data)
+- [Model Providers](#model-providers)
+  - [LM Studio (local, default)](#lm-studio-local-default)
+  - [AWS Bedrock](#aws-bedrock)
+  - [Anthropic API](#anthropic-api)
 - [SQL Agent (OpenAI-Compatible API)](#sql-agent-openai-compatible-api)
 - [SQL Agent (Web Chat UI)](#sql-agent-web-chat-ui)
 - [SQL Agent (CLI)](#sql-agent-cli)
@@ -50,6 +54,49 @@ uv run manage.py ncsbe peek
 
 Data is cached in `scratch/data/` after the first download.
 
+## Model Providers
+
+Models are configured via the Django admin under **Agent > Tool Models**. Load the default fixture to get started:
+
+```bash
+uv run manage.py loaddata agent_models
+```
+
+This configures `lmstudio:mistralai/ministral-3-3b` for the `voter_agent` tool and
+`bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0` for `sql_gen`.
+
+### LM Studio (local, default)
+
+1. Download and install [LM Studio](https://lmstudio.ai/).
+2. Search for and download **mistralai/ministral-3-3b** (the default model).
+3. Start the local inference server (listens on `http://localhost:1234/v1`):
+
+```bash
+lms server start
+```
+
+No API key is required — LM Studio is accessed with the placeholder key `lm-studio`.
+
+### AWS Bedrock
+
+Set the bearer token before starting the server:
+
+```bash
+export AWS_BEARER_TOKEN_BEDROCK=<your-token>
+```
+
+Model names use the `bedrock:` prefix (e.g. `bedrock:us.anthropic.claude-sonnet-4-6`).
+
+### Anthropic API
+
+Set the API key before starting the server:
+
+```bash
+export ANTHROPIC_API_KEY=<your-key>
+```
+
+Model names use the `anthropic:` prefix (e.g. `anthropic:claude-sonnet-4-6`).
+
 ## SQL Agent (OpenAI-Compatible API)
 
 An OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`) served by [django-bolt](https://bolt.farhana.li/).
@@ -71,9 +118,6 @@ uv run manage.py runbolt --dev
 ## SQL Agent (Web Chat UI)
 
 An AI agent can query the `VoterView` and `VoterEventView` materialized views via natural language.
-
-The model is configured via the Django admin under **Agent > Tool Models**. Add a `ToolModel` record
-for each tool (`sql_gen`, `voter_agent`), or add one with no tool name as a default for all tools.
 
 ```bash
 # Start the web chat UI
