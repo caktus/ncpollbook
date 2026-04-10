@@ -36,7 +36,7 @@ _key = settings.AGENT_API_KEY
 _auth = [APIKeyAuthentication(api_keys={_key}, header="Authorization")] if _key else []
 _guards = [IsAuthenticated()] if _key else [AllowAny()]
 
-api = BoltAPI(prefix="/v1")
+api = BoltAPI()
 register_health_checks(api)
 
 
@@ -142,7 +142,7 @@ async def _sse_stream(question: str, model: str) -> AsyncGenerator[bytes]:
 # --- Endpoints ---
 
 
-@api.post("/chat/completions", auth=_auth, guards=_guards)
+@api.post("/v1/chat/completions", auth=_auth, guards=_guards)
 async def chat_completions(
     body: ChatCompletionRequest,
 ):
@@ -161,7 +161,7 @@ async def chat_completions(
     return _completion_response(result.output)
 
 
-@api.get("/models", auth=_auth, guards=_guards)
+@api.get("/v1/models", auth=_auth, guards=_guards)
 async def models_list() -> dict:
     """GET /v1/models — returns a static voter-agent model entry."""
     return {

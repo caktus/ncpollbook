@@ -142,6 +142,6 @@ class TestApiKeyAuth:
 class TestHealthChecks:
     def test_health_liveness(self):
         with TestClient(api) as client:
-            resp = client.get("/v1/health")
+            resp = client.get("/health")
         assert resp.status_code == 200
         assert resp.json()["status"] == "ok"

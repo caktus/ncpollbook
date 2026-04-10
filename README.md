@@ -11,6 +11,7 @@ Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialize
 
 - [Setup](#setup)
 - [Loading Data](#loading-data)
+- [SQL Agent (OpenAI-Compatible API)](#sql-agent-openai-compatible-api)
 - [SQL Agent (Web Chat UI)](#sql-agent-web-chat-ui)
 - [SQL Agent (CLI)](#sql-agent-cli)
 - [Development](#development)
@@ -52,26 +53,19 @@ Data is cached in `scratch/data/` after the first download.
 ## SQL Agent (OpenAI-Compatible API)
 
 An OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`) served by [django-bolt](https://bolt.farhana.li/).
-Point LibreChat or any OpenAI-compatible client at `http://<host>:8001/v1` with model `voter-agent`.
+Point LibreChat or any OpenAI-compatible client at `http://<host>:8000/v1` with model `voter-agent`.
 
 Optionally protect the API with an API key by setting `AGENT_API_KEY` in the environment. Clients
 send it as `Authorization: Bearer <key>`.
 
 ```bash
-# Start the async API server (auto-discovers apps/agent/views.py)
+# Start the async API server (serves API, Django admin, and docs on port 8000)
 uv run manage.py runbolt --dev
 
 # Health endpoints (no auth required)
 # GET /health  — liveness probe
 # GET /ready   — readiness probe with service checks
-```
-
-The default development port is `8000`. The Django admin can be run simultaneously on a different
-port if needed:
-
-```bash
-uv run manage.py runserver 8001  # Django admin
-uv run manage.py runbolt --dev   # bolt API on 8000
+# Django admin available at http://127.0.0.1:8000/admin/
 ```
 
 ## SQL Agent (Web Chat UI)
