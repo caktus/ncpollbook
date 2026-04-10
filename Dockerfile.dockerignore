@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+scratch/data/
+exports/
+*.env
+.env*
+!docker-compose.deploy.env

@@ -1,0 +1,22 @@
+services:
+  web:
+    image: ncpollbook:latest
+    build:
+      context: .
+      target: deploy
+    env_file: docker-compose.deploy.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: ncpollbook
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+volumes:
+  postgres_data:
