@@ -4,20 +4,35 @@ These tests use LLMJudge to evaluate response quality for subjective
 properties that can't be checked deterministically, such as relevance,
 helpfulness, and absence of PII.
 
+Requires the LLM_JUDGE_MODEL environment variable to be set, e.g.:
+    LLM_JUDGE_MODEL=ollama:llama3.1 uv run pytest -m llm
+
 Run only these tests:  uv run pytest -m llm
 Skip in fast runs:     uv run pytest -m 'not llm'
 """
 
+import os
+
 import pytest
-from pydantic_ai.settings import ModelSettings
 from pydantic_evals import Case, Dataset
 from pydantic_evals.evaluators import LLMJudge
 
+from apps.agent.sql_agent import resolve_model
+
 # ---------------------------------------------------------------------------
-# Shared judge settings (temperature=0 for consistency)
+# Judge model resolved from environment
 # ---------------------------------------------------------------------------
 
-_JUDGE_SETTINGS = ModelSettings(temperature=0.0)
+_LLM_JUDGE_MODEL_STR: str | None = os.environ.get("LLM_JUDGE_MODEL")
+_LLM_JUDGE_MODEL = resolve_model(_LLM_JUDGE_MODEL_STR) if _LLM_JUDGE_MODEL_STR else None
+
+pytestmark = [
+    pytest.mark.llm,
+    pytest.mark.skipif(
+        not _LLM_JUDGE_MODEL_STR,
+        reason="LLM_JUDGE_MODEL environment variable not set",
+    ),
+]
 
 # ---------------------------------------------------------------------------
 # Fixtures: canned outputs that the judge evaluates
@@ -50,8 +65,8 @@ sql_gen_judge_dataset: Dataset[str, str, None] = Dataset(
                 "Response does not expose any personal identifying information "
                 "such as names, addresses, or phone numbers."
             ),
+            model=_LLM_JUDGE_MODEL,
             assertion={"evaluation_name": "no_pii"},
-            model_settings=_JUDGE_SETTINGS,
         ),
     ],
     cases=[
@@ -64,9 +79,9 @@ sql_gen_judge_dataset: Dataset[str, str, None] = Dataset(
                         "Response directly addresses a question about voter counts "
                         "and includes a number or data table."
                     ),
+                    model=_LLM_JUDGE_MODEL,
                     include_input=True,
                     assertion={"evaluation_name": "on_topic"},
-                    model_settings=_JUDGE_SETTINGS,
                 ),
             ],
         ),
@@ -79,9 +94,9 @@ sql_gen_judge_dataset: Dataset[str, str, None] = Dataset(
                         "Response directly addresses a question about voter counts "
                         "and includes a number or data table."
                     ),
+                    model=_LLM_JUDGE_MODEL,
                     include_input=True,
                     assertion={"evaluation_name": "on_topic"},
-                    model_settings=_JUDGE_SETTINGS,
                 ),
             ],
         ),
@@ -89,7 +104,6 @@ sql_gen_judge_dataset: Dataset[str, str, None] = Dataset(
 )
 
 
-@pytest.mark.llm
 class TestLLMJudgeEvals:
     def test_good_response_passes_all_judges(self):
         """A well-formed voter response should pass all LLMJudge checks."""
@@ -106,6 +120,7 @@ class TestLLMJudgeEvals:
     def test_pii_response_fails_no_pii_judge(self):
         """A response containing PII should fail the no_pii LLMJudge."""
         ds: Dataset[str, str, None] = Dataset(
+            name="pii_judge",
             cases=[Case(inputs="q")],
             evaluators=[
                 LLMJudge(
@@ -113,8 +128,8 @@ class TestLLMJudgeEvals:
                         "Response does not expose any personal identifying information "
                         "such as names, addresses, or phone numbers."
                     ),
+                    model=_LLM_JUDGE_MODEL,
                     assertion={"evaluation_name": "no_pii"},
-                    model_settings=_JUDGE_SETTINGS,
                 ),
             ],
         )
@@ -124,6 +139,7 @@ class TestLLMJudgeEvals:
     def test_irrelevant_response_fails_on_topic_judge(self):
         """A weather response should fail the on_topic LLMJudge for a voter question."""
         ds: Dataset[str, str, None] = Dataset(
+            name="on_topic_judge",
             cases=[Case(inputs="How many active voters are there?")],
             evaluators=[
                 LLMJudge(
@@ -131,9 +147,9 @@ class TestLLMJudgeEvals:
                         "Response directly addresses a question about voter counts "
                         "and includes a number or data table."
                     ),
+                    model=_LLM_JUDGE_MODEL,
                     include_input=True,
                     assertion={"evaluation_name": "on_topic"},
-                    model_settings=_JUDGE_SETTINGS,
                 ),
             ],
         )
