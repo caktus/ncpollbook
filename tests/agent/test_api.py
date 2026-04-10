@@ -53,55 +53,7 @@ class TestParseMessages:
 
 class TestChatCompletions:
     @pytest.mark.django_db
-    def test_returns_openai_shape(self):
-        with (
-            patch(
-                "apps.agent.api.voter_agent.run",
-                AsyncMock(return_value=AsyncMock(output="There are 1000 active voters.")),
-            ),
-            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
-            TestClient(api) as client,
-        ):
-            resp = client.post("/v1/chat/completions", json={"messages": _MESSAGES})
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["object"] == "chat.completion"
-        assert data["choices"][0]["message"]["role"] == "assistant"
-        assert "active voters" in data["choices"][0]["message"]["content"]
-
-    @pytest.mark.django_db
-    def test_streaming_returns_event_stream(self):
-        mock_result = MagicMock()
-
-        async def fake_deltas():
-            return
-            yield  # async generator that yields nothing
-
-        mock_result.stream_text = MagicMock(return_value=fake_deltas())
-
-        mock_run_stream_cm = MagicMock()
-        mock_run_stream_cm.__aenter__ = AsyncMock(return_value=mock_result)
-        mock_run_stream_cm.__aexit__ = AsyncMock(return_value=False)
-
-        with (
-            patch("apps.agent.api.voter_agent.run_stream", return_value=mock_run_stream_cm),
-            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
-            TestClient(api) as client,
-        ):
-            resp = client.post(
-                "/v1/chat/completions",
-                json={"messages": _MESSAGES, "stream": True},
-                stream=True,
-            )
-            assert resp.status_code == 200
-            assert "text/event-stream" in resp.headers.get("content-type", "")
-            chunks = list(resp.iter_content(chunk_size=4096, decode_unicode=True))
-
-        assert "[DONE]" in "".join(chunks)
-
-    @pytest.mark.django_db
-    def test_streaming_yields_content_delta(self):
-        """Agent token deltas from run_stream are forwarded as SSE chunks."""
+    def test_streams_event_stream(self):
         mock_result = MagicMock()
 
         async def fake_deltas():
@@ -120,10 +72,11 @@ class TestChatCompletions:
         ):
             resp = client.post(
                 "/v1/chat/completions",
-                json={"messages": _MESSAGES, "stream": True},
+                json={"messages": _MESSAGES},
                 stream=True,
             )
             assert resp.status_code == 200
+            assert "text/event-stream" in resp.headers.get("content-type", "")
             chunks = list(resp.iter_content(chunk_size=4096, decode_unicode=True))
 
         body = "".join(chunks)

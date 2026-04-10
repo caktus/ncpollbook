@@ -54,7 +54,6 @@ class Message(msgspec.Struct):
 
 class ChatCompletionRequest(msgspec.Struct):
     messages: list[Message]
-    stream: bool = False
 
 
 # --- Helpers ---
@@ -95,24 +94,6 @@ def _parse_messages(messages: list[Message]) -> tuple[str, list[ModelMessage]]:
     return user_prompt, history
 
 
-def _completion_response(answer: str) -> dict:
-    """Build an OpenAI-shaped chat.completion response dict."""
-    return {
-        "id": f"chatcmpl-{uuid.uuid4().hex}",
-        "object": "chat.completion",
-        "created": int(time.time()),
-        "model": _MODEL_ID,
-        "choices": [
-            {
-                "index": 0,
-                "message": {"role": "assistant", "content": answer},
-                "finish_reason": "stop",
-            }
-        ],
-        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-    }
-
-
 async def _sse_stream(
     question: str, model: str, history: list[ModelMessage]
 ) -> AsyncGenerator[bytes]:
@@ -144,10 +125,8 @@ async def _sse_stream(
 
 
 @api.post("/v1/chat/completions", auth=_auth, guards=_guards)
-async def chat_completions(
-    body: ChatCompletionRequest,
-):
-    """POST /v1/chat/completions — OpenAI-compatible chat completions."""
+async def chat_completions(body: ChatCompletionRequest) -> StreamingResponse:
+    """POST /v1/chat/completions — OpenAI-compatible chat completions (streaming only)."""
 
     logger.debug("chat_completions messages: %s", body.messages)
     user_prompt, history = _parse_messages(body.messages)
@@ -155,14 +134,9 @@ async def chat_completions(
         raise BadRequest(detail="No user message found")
 
     model = await get_tool_model(AgentTool.VOTER_AGENT)
-
-    if body.stream:
-        return StreamingResponse(
-            _sse_stream(user_prompt, model, history), media_type="text/event-stream"
-        )
-
-    result = await voter_agent.run(user_prompt, model=model, message_history=history or None)
-    return _completion_response(result.output)
+    return StreamingResponse(
+        _sse_stream(user_prompt, model, history), media_type="text/event-stream"
+    )
 
 
 @api.get("/v1/models", auth=_auth, guards=_guards)
