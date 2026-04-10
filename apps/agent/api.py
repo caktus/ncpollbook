@@ -16,20 +16,25 @@ import json
 import time
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Annotated
 
 import msgspec
 from django.conf import settings
 from django_bolt import BoltAPI
-from django_bolt.exceptions import BadRequest, Unauthorized
+from django_bolt.auth import AllowAny, APIKeyAuthentication, IsAuthenticated
+from django_bolt.exceptions import BadRequest
 from django_bolt.health import register_health_checks
-from django_bolt.param_functions import Header
 from django_bolt.responses import StreamingResponse
 
 from apps.agent.models import AgentTool
 from apps.agent.sql_agent import get_tool_model, voter_agent
 
 _MODEL_ID = "voter-agent"
+
+# Build auth from AGENT_API_KEY at startup. Bolt strips the "Bearer " prefix
+# automatically when comparing Authorization header values, so api_keys holds the raw key.
+_key = settings.AGENT_API_KEY
+_auth = [APIKeyAuthentication(api_keys={_key}, header="Authorization")] if _key else []
+_guards = [IsAuthenticated()] if _key else [AllowAny()]
 
 api = BoltAPI(prefix="/v1")
 register_health_checks(api)
@@ -49,15 +54,6 @@ class ChatCompletionRequest(msgspec.Struct):
 
 
 # --- Helpers ---
-
-
-def _check_api_key(authorization: str | None) -> None:
-    """Raise 401 if AGENT_API_KEY is configured and the header doesn't match."""
-    required = settings.AGENT_API_KEY
-    if not required:
-        return
-    if authorization != f"Bearer {required}":
-        raise Unauthorized(detail="Invalid API key")
 
 
 def _extract_text(content: str | list) -> str:
@@ -146,13 +142,11 @@ async def _sse_stream(question: str, model: str) -> AsyncGenerator[bytes]:
 # --- Endpoints ---
 
 
-@api.post("/chat/completions")
+@api.post("/chat/completions", auth=_auth, guards=_guards)
 async def chat_completions(
     body: ChatCompletionRequest,
-    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
 ):
     """POST /v1/chat/completions — OpenAI-compatible chat completions."""
-    _check_api_key(authorization)
 
     question = _build_question(body.messages)
     if not question:
@@ -167,12 +161,9 @@ async def chat_completions(
     return _completion_response(result.output)
 
 
-@api.get("/models")
-async def models_list(
-    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
-) -> dict:
+@api.get("/models", auth=_auth, guards=_guards)
+async def models_list() -> dict:
     """GET /v1/models — returns a static voter-agent model entry."""
-    _check_api_key(authorization)
     return {
         "object": "list",
         "data": [

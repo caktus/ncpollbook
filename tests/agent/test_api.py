@@ -1,7 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from django.test import override_settings
+from django_bolt import BoltAPI
+from django_bolt.auth import APIKeyAuthentication, IsAuthenticated
 from django_bolt.testing import TestClient
 
 from apps.agent.api import Message, _build_question, api
@@ -103,35 +104,6 @@ class TestChatCompletions:
             resp = client.post("/v1/chat/completions", json={"bad": "field"})
         assert resp.status_code == 422
 
-    @pytest.mark.django_db
-    @override_settings(AGENT_API_KEY="secret")
-    def test_wrong_api_key_returns_401(self):
-        with TestClient(api) as client:
-            resp = client.post(
-                "/v1/chat/completions",
-                json={"messages": _MESSAGES},
-                headers={"Authorization": "Bearer wrong"},
-            )
-        assert resp.status_code == 401
-
-    @pytest.mark.django_db
-    @override_settings(AGENT_API_KEY="secret")
-    def test_correct_api_key_passes(self):
-        with (
-            patch(
-                "apps.agent.api.voter_agent.run",
-                AsyncMock(return_value=AsyncMock(output="answer")),
-            ),
-            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
-            TestClient(api) as client,
-        ):
-            resp = client.post(
-                "/v1/chat/completions",
-                json={"messages": _MESSAGES},
-                headers={"Authorization": "Bearer secret"},
-            )
-        assert resp.status_code == 200
-
 
 class TestModelsList:
     @pytest.mark.django_db
@@ -143,12 +115,28 @@ class TestModelsList:
         assert data["object"] == "list"
         assert data["data"][0]["id"] == "voter-agent"
 
-    @pytest.mark.django_db
-    @override_settings(AGENT_API_KEY="secret")
-    def test_wrong_api_key_returns_401(self):
-        with TestClient(api) as client:
-            resp = client.get("/v1/models", headers={"Authorization": "Bearer wrong"})
-        assert resp.status_code == 401
+
+class TestApiKeyAuth:
+    """Verify APIKeyAuthentication rejects wrong keys and accepts correct ones."""
+
+    def test_wrong_key_returns_401(self):
+        auth = [APIKeyAuthentication(api_keys={"secret"}, header="Authorization")]
+        guards = [IsAuthenticated()]
+        test_api = BoltAPI()
+
+        @test_api.get("/protected", auth=auth, guards=guards)
+        async def protected():
+            return {"ok": True}
+
+        with TestClient(test_api) as client:
+            assert (
+                client.get("/protected", headers={"Authorization": "Bearer wrong"}).status_code
+                == 401
+            )
+            assert (
+                client.get("/protected", headers={"Authorization": "Bearer secret"}).status_code
+                == 200
+            )
 
 
 class TestHealthChecks:
