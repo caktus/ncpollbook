@@ -248,6 +248,12 @@
             apiToken: "{{ cloudflare_api_token }}"
             accountId: "{{ cloudflare_account_id }}"
             tunnelName: "{{ cloudflare_tunnel_name }}"
+          cloudflared:
+            image:
+              repository: cloudflare/cloudflared
+              pullPolicy: Always
+              tag: latest
+            replicaCount: 3
         wait: yes
 
     - name: Apply whoami Helm chart
