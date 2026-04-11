@@ -1,6 +1,7 @@
 ---
 - hosts: k8s_vms
   become: yes
+  tags: microk8s
   tasks:
     - name: Create directory for MicroK8s config
       ansible.builtin.file:
@@ -44,17 +45,10 @@
           become: false
 
 - hosts: k8s_api
-  tags: k8s
+  tags: cloudflared
+  gather_facts: false
   tasks:
     # https://github.com/canonical/microk8s/issues/4864
-    - name: Create Cloudflared namespace
-      kubernetes.core.k8s:
-        # context: "{{ k8s_context|mandatory }}"
-        # kubeconfig: "{{ k8s_kubeconfig }}"
-        name: "{{ k8s_cloudflare_namespace }}"
-        api_version: v1
-        kind: Namespace
-        state: present
     - name: Apply Cloudflared Helm chart
       kubernetes.core.helm:
         # context: "{{ k8s_context|mandatory }}"
@@ -62,6 +56,7 @@
         chart_repo_url: https://community-charts.github.io/helm-charts
         chart_ref: cloudflared
         chart_version: "{{ k8s_cloudflare_chart_version }}"
+        create_namespace: yes
         release_name: "cloudflared"
         release_namespace: "{{ k8s_cloudflare_namespace }}"
         release_values: "{{ k8s_cloudflare_release_values }}"
@@ -75,4 +70,63 @@
         chart_ref: httpbin
         release_name: "httpbin"
         release_namespace: "{{ k8s_cloudflare_namespace }}"
+        wait: yes
+
+- hosts: k8s_api
+  tags: tailscale
+  gather_facts: false
+  tasks:
+    - name: Apply Tailscale Operator Helm chart
+      kubernetes.core.helm:
+        chart_repo_url: https://pkgs.tailscale.com/helmcharts
+        chart_ref: tailscale-operator
+        chart_version: "{{ k8s_tailscale_chart_version }}"
+        create_namespace: yes
+        release_name: "tailscale-operator"
+        release_namespace: "{{ k8s_tailscale_namespace }}"
+        release_values: "{{ k8s_tailscale_release_values }}"
+        wait: yes
+
+    - name: Apply Traefik Helm chart
+      kubernetes.core.helm:
+        chart_repo_url: https://traefik.github.io/charts
+        chart_ref: traefik
+        chart_version: "{{ k8s_traefik_chart_version }}"
+        create_namespace: yes
+        release_name: "traefik"
+        release_namespace: "{{ k8s_traefik_namespace }}"
+        release_values: "{{ k8s_traefik_release_values }}"
+        wait: yes
+
+    - name: Create Tailscale Funnel for Traefik service
+      kubernetes.core.k8s:
+        definition:
+          # https://tailscale.com/docs/features/kubernetes-operator/how-to/cluster-ingress#exposing-a-service-to-the-public-internet-using-ingress-and-tailscale-funnel
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: tailscale-funnel-ing
+            namespace: "{{ k8s_traefik_namespace }}"
+            annotations:
+              tailscale.com/funnel: "true"
+          spec:
+            defaultBackend:
+              service:
+                name: traefik
+                port:
+                  number: 80
+            ingressClassName: tailscale
+            tls:
+              - hosts:
+                  - traefik
+        wait: yes
+
+    - name: Apply whoami Helm chart
+      kubernetes.core.helm:
+        chart_repo_url: https://cowboysysop.github.io/charts/
+        chart_ref: whoami
+        create_namespace: yes
+        release_name: whoami
+        release_namespace: "{{ k8s_whoami_namespace }}"
+        release_values: "{{ k8s_whoami_release_values }}"
         wait: yes

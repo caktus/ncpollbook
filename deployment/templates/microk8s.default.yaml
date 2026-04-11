@@ -11,3 +11,4 @@ addons:
 # https://canonical.com/microk8s/docs/ref-launch-config
 extraSANs:
   - ncpollbook
+  - ncpollbook-k8s-api
