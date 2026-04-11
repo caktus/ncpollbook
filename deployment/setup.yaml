@@ -45,7 +45,7 @@
           become: false
 
 - hosts: k8s_api
-  tags: cloudflared
+  tags: [never, cloudflared]
   gather_facts: false
   tasks:
     # https://github.com/canonical/microk8s/issues/4864
@@ -73,7 +73,7 @@
         wait: yes
 
 - hosts: k8s_api
-  tags: tailscale
+  tags: [never, tailscale]
   gather_facts: false
   tasks:
     - name: Apply Tailscale Operator Helm chart
@@ -119,6 +119,135 @@
             tls:
               - hosts:
                   - traefik
+        wait: yes
+
+    - name: Apply whoami Helm chart
+      kubernetes.core.helm:
+        chart_repo_url: https://cowboysysop.github.io/charts/
+        chart_ref: whoami
+        create_namespace: yes
+        release_name: whoami
+        release_namespace: "{{ k8s_whoami_namespace }}"
+        release_values: "{{ k8s_whoami_release_values }}"
+        wait: yes
+
+- hosts: k8s_api
+  tags: [never, cloudflare-operator]
+  gather_facts: false
+  tasks:
+    - name: Apply cert-manager Helm chart
+      kubernetes.core.helm:
+        chart_ref: oci://quay.io/jetstack/charts/cert-manager
+        chart_version: v1.20.2
+        create_namespace: yes
+        release_name: cert-manager
+        release_namespace: cert-manager
+        release_values:
+          crds:
+            enabled: true
+        wait: yes
+
+    - name: Create cloudflare-operator-system namespace
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: cloudflare-operator-system
+
+    - name: Create Cloudflare API token secret
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: cloudflare-secrets
+            namespace: cloudflare-operator-system
+          type: Opaque
+          stringData:
+            CLOUDFLARE_API_TOKEN: "{{ cloudflare_api_token }}"
+
+    - name: Create Cloudflare Operator resources
+      kubernetes.core.k8s:
+        definition: >
+          {{
+            lookup(
+              'kubernetes.core.kustomize',
+              dir='https://github.com/adyanth/cloudflare-operator.git/config/default?ref=v0.13.1',
+            )
+          }}
+
+    - name: Create ClusterTunnel resource
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: networking.cfargotunnel.com/v1alpha2
+          kind: ClusterTunnel
+          metadata:
+            name: cluster-tunnel
+          spec:
+            newTunnel:
+              name: ncpollbook-operator-tunnel
+            cloudflare:
+              email: no-reply@example.com # FIXME
+              domain: example.com # FIXME
+              secret: cloudflare-secrets
+              accountId: "{{ cloudflare_account_id }}"
+
+    - name: Create ClusterTunnel resource
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: networking.cfargotunnel.com/v1alpha1
+          kind: TunnelBinding
+          metadata:
+            name: cloudflare-tunnel
+            namespace: traefik
+          subjects:
+            - name: traefik
+              spec:
+                fqdn: "foo.example.com" # FIXME
+                target: http://traefik.traefik.svc.cluster.local:80
+          tunnelRef:
+            kind: ClusterTunnel
+            name: cluster-tunnel
+
+    - name: Apply Traefik Helm chart
+      kubernetes.core.helm:
+        chart_repo_url: https://traefik.github.io/charts
+        chart_ref: traefik
+        chart_version: "{{ k8s_traefik_chart_version }}"
+        create_namespace: yes
+        release_name: "traefik"
+        release_namespace: "{{ k8s_traefik_namespace }}"
+        release_values: "{{ k8s_traefik_release_values }}"
+        wait: yes
+
+    - name: Apply whoami Helm chart
+      kubernetes.core.helm:
+        chart_repo_url: https://cowboysysop.github.io/charts/
+        chart_ref: whoami
+        create_namespace: yes
+        release_name: whoami
+        release_namespace: "{{ k8s_whoami_namespace }}"
+        release_values: "{{ k8s_whoami_release_values }}"
+        wait: yes
+
+- hosts: k8s_api
+  tags: cloudflare-ingress
+  gather_facts: false
+  tasks:
+    - name: Apply cloudflare-tunnel-ingress-controller Helm chart
+      kubernetes.core.helm:
+        chart_repo_url: https://helm.strrl.dev
+        chart_ref: cloudflare-tunnel-ingress-controller
+        chart_version: "0.0.23"
+        create_namespace: yes
+        release_name: "cf-tunnel-ingress"
+        release_namespace: "cf-tunnel-ingress"
+        release_values:
+          cloudflare:
+            apiToken: "{{ cloudflare_api_token }}"
+            accountId: "{{ cloudflare_account_id }}"
+            tunnelName: "{{ cloudflare_tunnel_name }}"
         wait: yes
 
     - name: Apply whoami Helm chart
