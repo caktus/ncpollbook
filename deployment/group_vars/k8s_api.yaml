@@ -147,7 +147,9 @@ k8s_traefik_dashboard_basicauth_password: !vault |
   36316436373739366336383264333266373666383766633061306333653261326265626235646437
   3539613064303735346335666165623634333439663864396530
 k8s_traefik_dashboard_basicauth_users:
-  - "admin:{{ k8s_traefik_dashboard_basicauth_password | password_hash('bcrypt') }}"
+  # Use a unique bcrypt salt for each user for idempotent Kubernetes Secret updates.
+  # bcrypt requires exactly 2 chars, e.g.: `pwgen -s 22 1`
+  - "admin:{{ k8s_traefik_dashboard_basicauth_password | password_hash('bcrypt', 'vVf4OnH1e0h1dFgHpog3uS') }}"
 k8s_traefik_release_values:
   ports:
     web:
