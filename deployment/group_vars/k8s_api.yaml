@@ -116,8 +116,24 @@ k8s_whoami_hostname: cf-whoami.caktus-built.com
 
 k8s_traefik_chart_version: 39.0.7
 k8s_traefik_namespace: traefik
+k8s_traefik_dashboard_hostname: cf-traefik-dashboard.caktus-built.com
+# Hostnames that cloudflare will route to Traefik
 k8s_traefik_hostnames:
   - "{{ k8s_whoami_hostname }}"
+  - "{{ k8s_traefik_dashboard_hostname }}"
+k8s_traefik_hsts_value: "max-age=31536000; includeSubDomains; preload"
+k8s_traefik_dashboard_basicauth_middleware_name: dashboard-basic-auth
+# pwgen -s 32 1 | tr -d '\n' | ansible-vault encrypt_string
+k8s_traefik_dashboard_basicauth_password: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  35633937633261356239663639333733356266623030363638373562643436383939626562386561
+  3564636264323231613163343866343663636264333832630a313166656635653630326662366639
+  64353832323235646665303834643037393763373366343038333861666439613336623737393136
+  3933316166303464330a316662393931393234633234643336396537306465313932353135316138
+  36316436373739366336383264333266373666383766633061306333653261326265626235646437
+  3539613064303735346335666165623634333439663864396530
+k8s_traefik_dashboard_basicauth_users:
+  - "admin:{{ k8s_traefik_dashboard_basicauth_password | password_hash('bcrypt') }}"
 k8s_traefik_release_values:
   ports:
     web:
@@ -126,12 +142,18 @@ k8s_traefik_release_values:
           # Trust X-Forwarded headers from the Microk8s Pod CIDR:
           # https://canonical.com/microk8s/docs/change-cidr
           - "10.1.0.0/16"
+      http:
+        middlewares:
+          # Apply HSTS headers by default to all services on this entrypoint
+          - "{{ k8s_traefik_namespace }}-security-headers@kubernetescrd"
   ingressRoute:
     dashboard:
       enabled: true
-      matchRule: Host(`dashboard.localhost`)
+      matchRule: Host(`{{ k8s_traefik_dashboard_hostname }}`)
       entryPoints:
         - web
+      middlewares:
+        - name: "{{ k8s_traefik_dashboard_basicauth_middleware_name }}"
   providers:
     kubernetesGateway:
       enabled: true
@@ -162,12 +184,7 @@ k8s_whoami_release_values:
     enabled: true
     ingressClassName: traefik
     pathType: Prefix
-    # annotations:
-    #   tailscale.com/funnel: "true"
     hosts:
       - host: "{{ k8s_whoami_hostname }}"
         paths:
           - /
-    # tls:
-    #   - hosts:
-    #       - "{{ k8s_whoami_dns_name }}"

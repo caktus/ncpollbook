@@ -267,10 +267,13 @@
         release_values: "{{ k8s_traefik_release_values }}"
         wait: yes
 
-    - name: Create Ingress for Traefik service
+    - name: Apply Traefik Kubernetes resources
       kubernetes.core.k8s:
-        definition: "{{ lookup('template', 'templates/cloudflared_traefik_ingress.yaml') }}"
+        definition: "{{ lookup('template', item) | from_yaml_all | list }}"
         wait: yes
+      loop:
+        - templates/traefik_middlewares.yaml
+        - templates/cloudflared_traefik_ingress.yaml
 
     - name: Apply whoami Helm chart
       kubernetes.core.helm:
