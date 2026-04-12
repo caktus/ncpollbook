@@ -239,21 +239,11 @@
       kubernetes.core.helm:
         chart_repo_url: https://helm.strrl.dev
         chart_ref: cloudflare-tunnel-ingress-controller
-        chart_version: "0.0.23"
+        chart_version: "{{ k8s_cloudflare_ingress_chart_version }}"
         create_namespace: yes
         release_name: "cf-tunnel-ingress"
-        release_namespace: "cf-tunnel-ingress"
-        release_values:
-          cloudflare:
-            apiToken: "{{ cloudflare_api_token }}"
-            accountId: "{{ cloudflare_account_id }}"
-            tunnelName: "{{ cloudflare_tunnel_name }}"
-          cloudflared:
-            image:
-              repository: cloudflare/cloudflared
-              pullPolicy: Always
-              tag: latest
-            replicaCount: 3
+        release_namespace: "{{ k8s_cloudflare_ingress_namespace }}"
+        release_values: "{{ k8s_cloudflare_ingress_release_values }}"
         wait: yes
 
     - name: Apply Traefik Helm chart

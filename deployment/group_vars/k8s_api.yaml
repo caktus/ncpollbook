@@ -21,6 +21,20 @@ cloudflare_account_id: !vault |
   6431313532643437643632643461663262653330636235663533
 cloudflare_tunnel_name: ncpollbook-ingress-tunnel
 
+k8s_cloudflare_ingress_namespace: cf-tunnel-ingress
+k8s_cloudflare_ingress_chart_version: 0.0.23
+k8s_cloudflare_ingress_release_values:
+  cloudflare:
+    apiToken: "{{ cloudflare_api_token }}"
+    accountId: "{{ cloudflare_account_id }}"
+    tunnelName: "{{ cloudflare_tunnel_name }}"
+  cloudflared:
+    image:
+      repository: cloudflare/cloudflared
+      pullPolicy: Always
+      tag: latest
+    replicaCount: 3
+
 ## cloudflared + httpbin ##
 
 k8s_cloudflare_namespace: cloudflared
