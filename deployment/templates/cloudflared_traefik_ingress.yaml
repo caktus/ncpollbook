@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloudflared-traefik-ing
+  namespace: "{{ k8s_traefik_namespace }}"
+spec:
+  ingressClassName: cloudflare-tunnel
+  rules:
+{% for host in k8s_traefik_hostnames %}
+    - host: {{ host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: traefik
+                port:
+                  number: 80
+{% endfor %}

@@ -112,8 +112,12 @@ k8s_tailscale_release_values:
   operatorConfig:
     hostname: ncpollbook-k8s-api
 
+k8s_whoami_hostname: cf-whoami.caktus-built.com
+
 k8s_traefik_chart_version: 39.0.7
 k8s_traefik_namespace: traefik
+k8s_traefik_hostnames:
+  - "{{ k8s_whoami_hostname }}"
 k8s_traefik_release_values:
   ports:
     web:
@@ -156,12 +160,12 @@ k8s_whoami_release_values:
     tag: latest
   ingress:
     enabled: true
-    ingressClassName: cloudflare-tunnel
+    ingressClassName: traefik
     pathType: Prefix
     # annotations:
     #   tailscale.com/funnel: "true"
     hosts:
-      - host: cf-whoami.caktus-built.com
+      - host: "{{ k8s_whoami_hostname }}"
         paths:
           - /
     # tls:

@@ -256,6 +256,22 @@
             replicaCount: 3
         wait: yes
 
+    - name: Apply Traefik Helm chart
+      kubernetes.core.helm:
+        chart_repo_url: https://traefik.github.io/charts
+        chart_ref: traefik
+        chart_version: "{{ k8s_traefik_chart_version }}"
+        create_namespace: yes
+        release_name: "traefik"
+        release_namespace: "{{ k8s_traefik_namespace }}"
+        release_values: "{{ k8s_traefik_release_values }}"
+        wait: yes
+
+    - name: Create Ingress for Traefik service
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', 'templates/cloudflared_traefik_ingress.yaml') }}"
+        wait: yes
+
     - name: Apply whoami Helm chart
       kubernetes.core.helm:
         chart_repo_url: https://cowboysysop.github.io/charts/
