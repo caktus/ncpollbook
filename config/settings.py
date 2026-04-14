@@ -181,4 +181,4 @@ LOGGING = {
 EXPORT_DIR = BASE_DIR / "exports"
 
 # Directory where downloaded NCSBE data files are cached
-SCRATCH_DIR = BASE_DIR / "scratch" / "data"
+SCRATCH_DIR = os.getenv("SCRATCH_DIR", "/tmp/ncsbe-data")
