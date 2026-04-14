@@ -105,6 +105,9 @@ MATERIALIZED_VIEWS_DISABLE_SYNC_ON_MIGRATE = True
 # Leave empty to allow unauthenticated access (local dev default).
 AGENT_API_KEY = os.environ.get("AGENT_API_KEY", "")
 
+# LM Studio local inference server base URL
+LM_STUDIO_BASE_URL = os.environ.get("LM_STUDIO_BASE_URL", "http://localhost:1234/v1")
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
