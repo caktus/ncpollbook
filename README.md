@@ -19,9 +19,9 @@ Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialize
 - [SQL Agent (OpenAI-Compatible API)](#sql-agent-openai-compatible-api)
 - [SQL Agent (Web Chat UI)](#sql-agent-web-chat-ui)
 - [SQL Agent (CLI)](#sql-agent-cli)
+- [Testing and Linting](#testing-and-linting)
+- [Releasing](#releasing)
 - [Deployment](#deployment)
-- [Development](#development)
-  - [Releasing](#releasing)
 
 ## Setup
 
@@ -163,16 +163,9 @@ The agent has two tools:
 - **run_sql_query** — generates and executes a SQL query, returns a markdown table
 - **run_python_code** — executes LLM-written Python in a secure [Monty](https://github.com/pydantic/monty) sandbox, with `run_sql_query` available for chaining multiple queries
 
-## Deployment
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for Kubernetes/Ansible deployment instructions.
-
-## Development
+## Testing and Linting
 
 ```bash
-# Run development server
-uv run manage.py runserver
-
 # Run tests (LLM evals skipped by default)
 uv run pytest
 
@@ -186,7 +179,7 @@ uv run pytest -m ''
 uv run pre-commit run --all-files
 ```
 
-### Releasing
+## Releasing
 
 1. Bump the version in `pyproject.toml`:
    ```sh
@@ -199,3 +192,7 @@ uv run pre-commit run --all-files
    - Publish the release
 
    When the release is published, CI automatically builds and publishes a new Docker image.
+
+## Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Kubernetes/Ansible deployment instructions.
