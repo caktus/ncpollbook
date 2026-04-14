@@ -42,6 +42,76 @@ postgresql_hba_entries:
       address: "::1/128",
       auth_method: "{{ postgresql_auth_method }}",
     }
+  # Allow connections from Microk8s
+  - {
+      type: host,
+      database: all,
+      user: all,
+      address: "10.1.0.0/16",
+      auth_method: "{{ postgresql_auth_method }}",
+    }
+
+# Global config options
+postgresql_usable_memory: "{{ (ansible_facts['memtotal_mb'] * 0.875) | int }}" # 28 GB of 32 GB RAM
+
+postgresql_global_config_options:
+  # Role defaults (required):
+  - option: unix_socket_directories
+    value: '{{ postgresql_unix_socket_directories | join(",") }}'
+  - option: log_directory
+    value: "log"
+  # Allow connections on the database host IP only
+  - option: listen_addresses
+    value: "127.0.0.1,{{ microk8s_host_ip }}"
+  # Performance settings recommended by pgtune (Data Warehouse profile):
+  # https://pgtune.leopard.in.ua/?dbVersion=18&osType=linux&dbType=dw&cpuNum=4&totalMemory=24&totalMemoryUnit=GB&connectionNum=200&hdType=ssd
+  # DB Version: 18
+  # OS Type: linux
+  # DB Type: dw
+  # Total Memory (RAM): 24 GB
+  # CPUs num: 4
+  # Connections num: 200
+  # Data Storage: ssd
+  - option: max_connections
+    value: "200"
+  - option: shared_buffers
+    value: "{{ ((postgresql_usable_memory | int) / 4) | round | int }}MB"
+  - option: effective_cache_size
+    value: "{{ ((postgresql_usable_memory | int) * 0.75) | round | int }}MB"
+  - option: maintenance_work_mem
+    value: "{{ ((postgresql_usable_memory | int) / 12) | round | int }}MB"
+  - option: checkpoint_completion_target
+    value: "0.9"
+  - option: wal_buffers
+    value: "16MB"
+  - option: default_statistics_target
+    value: "500"
+  - option: random_page_cost
+    value: "1.1"
+  - option: effective_io_concurrency
+    value: "200"
+  - option: work_mem
+    value: "29676kB"
+  - option: huge_pages
+    value: "off"
+  - option: min_wal_size
+    value: "4GB"
+  - option: max_wal_size
+    value: "16GB"
+  - option: max_worker_processes
+    value: "{{ ansible_facts['processor_vcpus'] }}"
+  - option: max_parallel_workers_per_gather
+    value: "{{ (ansible_facts['processor_vcpus'] / 2) | round | int }}"
+  - option: max_parallel_workers
+    value: "{{ ansible_facts['processor_vcpus'] }}"
+  - option: max_parallel_maintenance_workers
+    value: "{{ (ansible_facts['processor_vcpus'] / 2) | round | int }}"
+  # --- MODIFIED/ADDED FOR BULK LOAD PERFORMANCE ---
+  - option: checkpoint_timeout
+    value: "30min" # Added to spread out write load
+  # --- LOG SLOW QUERIES ---
+  - option: log_min_duration_statement
+    value: "50"
 
 ### galaxyproject.postgresql_objects configuration ###
 

@@ -5,3 +5,8 @@ roles:
   - src: https://github.com/galaxyproject/ansible-postgresql-objects
     name: galaxyproject.postgresql_objects
     version: 1.2.1
+
+collections:
+  - name: https://github.com/ansible-collections/kubernetes.core.git
+    type: git
+    version: e6076e5

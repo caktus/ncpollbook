@@ -354,6 +354,40 @@
   tags: [never, app]
   gather_facts: false
   tasks:
+    - name: Create app namespace
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ k8s_ncpollbook_namespace }}"
+    
+    - name: Create external PostgreSQL service for pods
+      kubernetes.core.k8s:
+        definition:
+          - apiVersion: v1
+            kind: Service
+            metadata:
+              name: postgres-external
+              namespace: "{{ k8s_ncpollbook_namespace }}"
+            spec:
+              clusterIP: None
+              ports:
+                - port: 5432
+                  targetPort: 5432
+                  protocol: TCP
+          - apiVersion: v1
+            kind: Endpoints
+            metadata:
+              name: postgres-external
+              namespace: "{{ k8s_ncpollbook_namespace }}"
+            subsets:
+              - addresses:
+                  - ip: "{{ microk8s_host_ip }}"
+                ports:
+                  - port: 5432
+        wait: yes
+
     - name: Apply ncpollbook Helm chart
       kubernetes.core.helm:
         chart_ref: "{{ playbook_dir }}/charts/ncpollbook"

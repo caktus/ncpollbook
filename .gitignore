@@ -20,3 +20,4 @@ scratch/
 .kube/
 bin/
 deployment/roles
+deployment/collections
