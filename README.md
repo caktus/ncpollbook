@@ -17,7 +17,7 @@ Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialize
   - [AWS Bedrock](#aws-bedrock)
   - [Anthropic API](#anthropic-api)
 - [SQL Agent (OpenAI-Compatible API)](#sql-agent-openai-compatible-api)
-- [SQL Agent (Web Chat UI)](#sql-agent-web-chat-ui)
+  - [LibreChat](#librechat)
 - [SQL Agent (CLI)](#sql-agent-cli)
 - [Testing and Linting](#testing-and-linting)
 - [Releasing](#releasing)
@@ -118,16 +118,51 @@ uv run manage.py runbolt --dev
 # Django admin available at http://127.0.0.1:8000/admin/
 ```
 
-## SQL Agent (Web Chat UI)
+### LibreChat
 
-An AI agent can query the `VoterView` and `VoterEventView` materialized views via natural language.
+To run LibreChat locally, follow the [Local Installation - Docker](https://www.librechat.ai/docs/local/docker) guide to clone the repo.
 
-```bash
-# Start the web chat UI
-uv run uvicorn apps.agent.web:app --host 127.0.0.1 --port 7932
+Then we need to configure LibreChat to use our local API. First we create a
+custom config YAML file:
+
+```yaml
+# file: librechat.yaml
+version: 1.3.7
+cache: true
+
+endpoints:
+  custom:
+    - name: "Django-Backend"
+      # The URL where your Django app serves the OpenAI-compatible API
+      baseURL: "http://host.docker.internal:8000/v1" 
+      # Reference a variable in your .env file
+      apiKey: "apikey"
+      models:
+        # List the models your Django app supports
+        default: ["voter-agent"] 
+        # Set to true if your Django app has a /models endpoint
+        fetch: true 
+      titleConvo: true
+      modelDisplayLabel: "NC Voter Data Agent"
 ```
 
-Then open [http://127.0.0.1:7932](http://127.0.0.1:7932) in your browser.
+Then we create a compose override file to mount the config and set the
+environment variable:
+
+```yaml
+# file: docker-compose.override.yml
+
+services:
+  api:
+    volumes:
+    - type: bind
+      source: ./librechat.yaml
+      target: /app/librechat.yaml
+```
+
+Now run `docker compose up -d` to start LibreChat with the custom configuration.
+You should see the "Django-Backend" endpoint available in LibreChat, and you can
+start chatting with the NC Voter Data Agent.
 
 ## SQL Agent (CLI)
 
