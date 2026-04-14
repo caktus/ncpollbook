@@ -277,8 +277,8 @@ base_librechat_config:
   endpoints:
     custom:
       - name: "ncpollbook-agent"
-        baseURL: "http://ncpollbook.ncpollbook.svc.cluster.local/v1"
-        apiKey: "django-api-key"
+        baseURL: "http://ncpollbook.ncpollbook.svc.cluster.local:8000/v1"
+        apiKey: "${NCPOLLBOOK_AGENT_API_KEY}"
         models:
           default: ["voter-agent"]
           fetch: true

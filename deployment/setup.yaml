@@ -339,6 +339,7 @@
             JWT_SECRET: "{{ env_librechat_jwt_secret }}"
             JWT_REFRESH_SECRET: "{{ env_librechat_jwt_refresh_secret }}"
             MEILI_MASTER_KEY: "{{ env_librechat_meili_master_key }}"
+            NCPOLLBOOK_AGENT_API_KEY: "{{ env_ncpollbook_agent_api_key }}"
 
     - name: Apply LibreChat Helm chart
       kubernetes.core.helm:
