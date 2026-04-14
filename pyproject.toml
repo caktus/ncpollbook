@@ -81,6 +81,7 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-m 'not llm'"
+norecursedirs = ["deployment"]
 markers = [
     "llm: evals that call a real LLM; skipped by default, run with -m llm",
 ]
