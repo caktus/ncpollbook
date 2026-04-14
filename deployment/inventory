@@ -1,4 +1,4 @@
-ncpollbook ansible_user=ubuntu ansible_python_interpreter=auto
+ncpollbook ansible_user=ubuntu ansible_python_interpreter="/usr/bin/python3"
 ncpollbook_k8s ansible_connection=local ansible_python_interpreter="{{ ansible_playbook_python }}"
 
 [k8s_vms]
@@ -6,3 +6,6 @@ ncpollbook
 
 [k8s_api]
 ncpollbook_k8s
+
+[postgres]
+ncpollbook

@@ -1,0 +1,60 @@
+### geerlingguy.postgresql configuration ###
+
+# Use Python 3
+postgresql_python_library: python3-psycopg2
+
+# Install newer postgres from pgdg repo
+postgresql_version: 18
+
+# Required to be set when changing postgresql_version from default:
+postgresql_bin_path: "/usr/lib/postgresql/{{ postgresql_version }}/bin"
+postgresql_config_path: "/etc/postgresql/{{ postgresql_version }}/main"
+postgresql_packages:
+  - postgresql-{{ postgresql_version }}
+  - postgresql-contrib-{{ postgresql_version }}
+  - libpq-dev
+
+# The defaults, but included for transparency
+postgresql_user: postgres
+postgresql_group: postgres
+postgresql_unix_socket_directories:
+  - /var/run/postgresql
+
+# # Auth method for non-superuser connections
+# postgresql_auth_method: scram-sha-256
+
+# pg_hba.conf entries
+postgresql_hba_entries:
+  # Role defaults:
+  - { type: local, database: all, user: postgres, auth_method: peer }
+  - { type: local, database: all, user: all, auth_method: peer }
+  - {
+      type: host,
+      database: all,
+      user: all,
+      address: "127.0.0.1/32",
+      auth_method: "{{ postgresql_auth_method }}",
+    }
+  - {
+      type: host,
+      database: all,
+      user: all,
+      address: "::1/128",
+      auth_method: "{{ postgresql_auth_method }}",
+    }
+
+### galaxyproject.postgresql_objects configuration ###
+
+# Configure the user(s) required by the application
+postgresql_objects_users:
+  - name: "{{ database_user }}"
+    password: "{{ database_password }}"
+
+# Configure the database(s) required by the application
+postgresql_objects_databases:
+  - name: "{{ database_name }}"
+    owner: "{{ database_user }}"
+    template: template0
+    encoding: UTF8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8

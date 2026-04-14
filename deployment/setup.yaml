@@ -44,6 +44,43 @@
           delegate_to: localhost
           become: false
 
+- hosts: postgres
+  tags: postgres
+  gather_facts: yes
+  become: yes
+  handlers:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+  pre_tasks:
+    - name: Add PGDG repository
+      ansible.builtin.deb822_repository:
+        name: postgresql
+        types: deb
+        uris: http://apt.postgresql.org/pub/repos/apt/
+        suites: "{{ ansible_facts['distribution_release'] }}-pgdg"
+        components: main
+        signed_by: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        state: present
+      notify: Update apt cache
+  roles:
+    - role: geerlingguy.postgresql
+  tasks:
+    - name: Install packages
+      ansible.builtin.apt:
+        name:
+          - acl
+        state: present
+        update_cache: yes
+
+- hosts: postgres
+  tags: [postgres, postgres_objects]
+  gather_facts: yes
+  become: yes
+  become_user: postgres
+  roles:
+    - role: galaxyproject.postgresql_objects
+
 - hosts: k8s_api
   tags: [never, cloudflared]
   gather_facts: false

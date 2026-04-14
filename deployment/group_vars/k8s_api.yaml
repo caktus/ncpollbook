@@ -285,6 +285,8 @@ k8s_librechat_release_values:
 k8s_ncpollbook_namespace: ncpollbook
 k8s_ncpollbook_chart_version: 0.1.0
 
+database_host_ip: "{{ hostvars['ncpollbook']['ansible_default_ipv4']['address'] }}"
+
 # pwgen -s 64 1 | tr -d '\n' | ansible-vault encrypt_string
 env_ncpollbook_secret_key: !vault |
   $ANSIBLE_VAULT;1.1;AES256
@@ -304,7 +306,7 @@ env_ncpollbook_agent_api_key: !vault |
   6532316130386131630a326665616664353238643966633737383431663762653065346433616365
   61616630323636396163316432613061356462363337643065663036663163363730643430613739
   6261386463396433666230373338323365323364343534316262
-env_ncpollbook_database_url: "<encrypted>"
+env_ncpollbook_database_url: "postgres://{{ database_user }}:{{ database_password }}@{{ database_host_ip }}/{{ database_name }}"
 
 k8s_ncpollbook_release_values:
   environmentVariables:

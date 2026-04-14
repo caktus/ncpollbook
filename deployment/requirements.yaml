@@ -1,0 +1,7 @@
+roles:
+  - src: https://github.com/geerlingguy/ansible-role-postgresql
+    name: geerlingguy.postgresql
+    version: 4.0.4
+  - src: https://github.com/galaxyproject/ansible-postgresql-objects
+    name: galaxyproject.postgresql_objects
+    version: 1.2.1
