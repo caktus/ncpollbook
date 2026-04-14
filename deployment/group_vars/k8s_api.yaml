@@ -307,6 +307,8 @@ env_ncpollbook_agent_api_key: !vault |
 env_ncpollbook_database_url: "postgres://{{ database_user }}:{{ database_password }}@postgres-external.{{ k8s_ncpollbook_namespace }}.svc.cluster.local/{{ database_name }}"
 
 k8s_ncpollbook_release_values:
+  image:
+    tag: sha-09b6bb3
   environmentVariables:
     DJANGO_SECRET_KEY: "{{ env_ncpollbook_secret_key }}"
     AGENT_API_KEY: "{{ env_ncpollbook_agent_api_key }}"
