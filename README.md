@@ -160,9 +160,16 @@ services:
       target: /app/librechat.yaml
 ```
 
-Now run `docker compose up -d` to start LibreChat with the custom configuration.
-You should see the "Django-Backend" endpoint available in LibreChat, and you can
-start chatting with the NC Voter Data Agent.
+Start the server with the override:
+
+```bash
+docker compose up -d
+```
+
+Now open the LibreChat UI at http://localhost:3080/login. 
+
+As noted in the docs, the first account you register becomes the admin account.
+There are no default credentials.
 
 ## SQL Agent (CLI)
 
