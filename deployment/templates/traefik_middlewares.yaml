@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dashboard-basic-auth
+  namespace: "{{ k8s_traefik_namespace }}"
+type: Opaque
+stringData:
+  users: |
+{% for user in k8s_traefik_dashboard_basicauth_users %}
+    {{ user }}
+{% endfor %}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: "{{ k8s_traefik_dashboard_basicauth_middleware_name }}"
+  namespace: "{{ k8s_traefik_namespace }}"
+spec:
+  basicAuth:
+    secret: dashboard-basic-auth
+    removeHeader: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: "{{ k8s_traefik_namespace }}"
+spec:
+  headers:
+    customResponseHeaders:
+      Strict-Transport-Security: "{{ k8s_traefik_hsts_value }}"

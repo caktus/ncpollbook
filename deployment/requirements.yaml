@@ -1,0 +1,13 @@
+roles:
+  - src: https://github.com/geerlingguy/ansible-role-postgresql
+    name: geerlingguy.postgresql
+    version: 4.0.4
+  - src: https://github.com/galaxyproject/ansible-postgresql-objects
+    name: galaxyproject.postgresql_objects
+    version: 1.2.1
+
+collections:
+  # 6.3.0 doesn't support Helm v4 yet
+  - name: https://github.com/ansible-collections/kubernetes.core.git
+    type: git
+    version: e6076e5

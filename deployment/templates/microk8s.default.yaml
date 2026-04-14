@@ -1,0 +1,16 @@
+# Default launch configuration for MicroK8s.
+# Based on https://raw.githubusercontent.com/canonical/microk8s/refs/heads/master/microk8s-resources/microk8s.default.yaml
+---
+version: 0.1.0
+extraKubeletArgs:
+  --cluster-domain: cluster.local
+  --cluster-dns: 10.152.183.10
+addons:
+  - name: dns
+  - name: host-access
+  - name: hostpath-storage
+# 'extraSANs' is a list of extra Subject Alternate Names to add to the local API server.
+# https://canonical.com/microk8s/docs/ref-launch-config
+extraSANs:
+  - ncpollbook
+  - ncpollbook-k8s-api

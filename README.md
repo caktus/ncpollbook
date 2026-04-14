@@ -20,6 +20,7 @@ Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialize
 - [SQL Agent (Web Chat UI)](#sql-agent-web-chat-ui)
 - [SQL Agent (CLI)](#sql-agent-cli)
 - [Docker Deployment](#docker-deployment)
+- [Deployment](DEPLOYMENT.md)
 - [Development](#development)
 
 ## Setup
@@ -176,6 +177,10 @@ COMPOSE_FILE=docker-compose.deploy.yaml docker compose up -d
 
 Edit `docker-compose.deploy.env` to set `DJANGO_SECRET_KEY`, database credentials,
 and any model provider API keys before deploying.
+
+## Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Kubernetes/Ansible deployment instructions.
 
 ## Development
 

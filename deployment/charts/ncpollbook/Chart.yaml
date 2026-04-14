@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ncpollbook
+description: Helm chart for the NC Voter Data Assistant Django application
+type: application
+version: 0.1.0
+appVersion: "main"

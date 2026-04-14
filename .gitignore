@@ -15,3 +15,9 @@ wheels/
 
 # Scratch files
 scratch/
+
+# Deployment
+.kube/
+bin/
+deployment/roles
+deployment/collections
