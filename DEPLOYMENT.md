@@ -10,7 +10,7 @@ This document covers deploying NC Pollbook to a Kubernetes cluster on a Framewor
   - [Deploy Cloudflare Ingress and Traefik](#deploy-cloudflare-ingress-and-traefik)
   - [Deploy the ncpollbook app](#deploy-the-ncpollbook-app)
     - [Management commands](#management-commands)
-- [Import NCSBE data](#import-ncsbe-data)
+  - [Deploy LibreChat](#deploy-librechat)
   - [Cloudflare DNS (manual steps)](#cloudflare-dns-manual-steps)
 
 ## Prerequisites
@@ -114,7 +114,6 @@ kubectl -n ncpollbook exec -it deploy/ncpollbook -c ncpollbook -- python manage.
 kubectl -n ncpollbook exec -it deploy/ncpollbook -c ncpollbook -- python manage.py loaddata agent_models
 # Sync pgviews
 kubectl -n ncpollbook exec -it deploy/ncpollbook -c ncpollbook -- python manage.py sync_pgviews
-```
 # Import NCSBE data
 kubectl -n ncpollbook exec -it deploy/ncpollbook -c ncpollbook -- python manage.py ncsbe etl
 ```
