@@ -13,10 +13,11 @@ spec:
       {{- include "ncpollbook.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        checksum/config: {{ toYaml .Values.environmentVariables | sha256sum }}
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "ncpollbook.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
