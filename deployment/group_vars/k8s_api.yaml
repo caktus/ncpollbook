@@ -47,8 +47,10 @@ k8s_cloudflare_release_values:
     # -- cloudflared tunnel name
     name: "ncpollbook"
   ingress:
-    - hostname: ncpollbook.caktus-built.com # or "*.example.com" but you must define a CNAME record for "*" to your DNS
-      service: http://httpbin.cloudflared.svc.cluster.local:80
+    - hostname: "{{ k8s_librechat_hostname }}"
+      service: http://traefik.traefik.svc.cluster.local:80
+    - hostname: "{{ k8s_ncpollbook_hostname }}"
+      service: http://traefik.traefik.svc.cluster.local:80
     - service: http_status:404
   tunnelSecrets:
     # This is for cloudflared tunnel certificate PEM file.
@@ -127,6 +129,8 @@ k8s_tailscale_release_values:
     hostname: ncpollbook-k8s-api
 
 k8s_whoami_hostname: cf-whoami.caktus-built.com
+k8s_librechat_hostname: ncpollbook.caktus-built.com
+k8s_ncpollbook_hostname: app.ncpollbook.caktus-built.com
 
 k8s_traefik_chart_version: 39.0.7
 k8s_traefik_namespace: traefik
@@ -135,6 +139,8 @@ k8s_traefik_dashboard_hostname: cf-traefik-dashboard.caktus-built.com
 k8s_traefik_hostnames:
   - "{{ k8s_whoami_hostname }}"
   - "{{ k8s_traefik_dashboard_hostname }}"
+  - "{{ k8s_librechat_hostname }}"
+  - "{{ k8s_ncpollbook_hostname }}"
 k8s_traefik_hsts_value: "max-age=31536000; includeSubDomains; preload"
 k8s_traefik_dashboard_basicauth_middleware_name: dashboard-basic-auth
 # pwgen -s 32 1 | tr -d '\n' | ansible-vault encrypt_string
@@ -204,3 +210,112 @@ k8s_whoami_release_values:
       - host: "{{ k8s_whoami_hostname }}"
         paths:
           - /
+
+## LibreChat ##
+
+k8s_librechat_namespace: librechat
+k8s_librechat_chart_version: 0.8.4
+
+# pwgen -s 32 1 | tr -d '\n' | ansible-vault encrypt_string
+env_librechat_creds_key: "<encrypted>"
+env_librechat_creds_iv: "<encrypted>"
+env_librechat_jwt_secret: "<encrypted>"
+env_librechat_jwt_refresh_secret: "<encrypted>"
+env_librechat_meili_master_key: "<encrypted>"
+
+k8s_librechat_environment_variables:
+  # See https://www.librechat.ai/docs/configuration/dotenv
+  CREDS_KEY: "{{ env_librechat_creds_key }}"
+  CREDS_IV: "{{ env_librechat_creds_iv }}"
+  JWT_SECRET: "{{ env_librechat_jwt_secret }}"
+  JWT_REFRESH_SECRET: "{{ env_librechat_jwt_refresh_secret }}"
+  MEILI_MASTER_KEY: "{{ env_librechat_meili_master_key }}"
+  APP_TITLE: "NC Voter Data Assistant"
+  CUSTOM_FOOTER: ""
+  ALLOW_EMAIL_LOGIN: "true"
+  ALLOW_REGISTRATION: "false"
+  ALLOW_PASSWORD_RESET: "true"
+
+# librechat.yaml configuration: https://www.librechat.ai/docs/configuration/librechat_yaml
+base_librechat_config:
+  version: 1.3.7
+  cache: true
+  interface:
+    customWelcome: "Welcome to the NC Voter Data Assistant! How can I help you today?"
+    presets: false
+    multiConvo: false
+    marketplace:
+      use: false
+  endpoints:
+    custom:
+      - name: "ncpollbook-agent"
+        baseURL: "http://ncpollbook.ncpollbook.svc.cluster.local/v1"
+        apiKey: "django-api-key"
+        models:
+          default: ["voter-agent"]
+          fetch: true
+        titleConvo: true
+        modelDisplayLabel: "NC Voter Data Agent"
+
+k8s_librechat_release_values:
+  librechat:
+    existingSecretName: librechat-credentials-env
+    configEnv:
+      APP_TITLE: "NC Voter Data Assistant"
+      CUSTOM_FOOTER: ""
+      ALLOW_EMAIL_LOGIN: "true"
+      ALLOW_REGISTRATION: "false"
+      ALLOW_PASSWORD_RESET: "true"
+    configYamlContent: "{{ base_librechat_config | to_yaml(sort_keys=False) }}"
+  updateStrategy:
+    type: Recreate
+  podAnnotations:
+    checksum/secrets: "{{ k8s_librechat_environment_variables | to_json(sort_keys=True) | hash('sha256') }}"
+  ingress:
+    enabled: true
+    className: traefik
+    hosts:
+      - host: "{{ k8s_librechat_hostname }}"
+        paths:
+          - path: /
+            pathType: Prefix
+
+## ncpollbook app ##
+
+k8s_ncpollbook_namespace: ncpollbook
+k8s_ncpollbook_chart_version: 0.1.0
+
+# pwgen -s 64 1 | tr -d '\n' | ansible-vault encrypt_string
+env_ncpollbook_secret_key: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  37356265313261396339643131663161623062333133643130376466626333346636356138343932
+  6433623363373464653633396135323036323461626530320a343333306464646335646435323730
+  34663531643932643562373566303630643861663731363039323562313837323665653061373033
+  3764376338386261630a393431343330656262366165613233346132346363313634373566393839
+  61336463386265633633653738393861303735666430386461386132306466633664396134333366
+  65643866326337613436373736383339346138393864353364366261396538336531383566623464
+  33303630656437363037343137303937366234653537613365373265636261366163366131313065
+  35636234623936303135
+env_ncpollbook_agent_api_key: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  36636637653130383932326364306564366366333034313866633831343831663764613033323235
+  3930363732643437393861386131313038366666356230610a383034313430613239643533653936
+  62663565323434336463643035383363646264333734333138393136353463326238366637333438
+  6532316130386131630a326665616664353238643966633737383431663762653065346433616365
+  61616630323636396163316432613061356462363337643065663036663163363730643430613739
+  6261386463396433666230373338323365323364343534316262
+env_ncpollbook_database_url: "<encrypted>"
+
+k8s_ncpollbook_release_values:
+  environmentVariables:
+    DJANGO_SECRET_KEY: "{{ env_ncpollbook_secret_key }}"
+    AGENT_API_KEY: "{{ env_ncpollbook_agent_api_key }}"
+    DATABASE_URL: "{{ env_ncpollbook_database_url }}"
+  ingress:
+    enabled: true
+    className: traefik
+    hosts:
+      - host: "{{ k8s_ncpollbook_hostname }}"
+        paths:
+          - path: /
+            pathType: Prefix
