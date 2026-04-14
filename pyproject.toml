@@ -17,7 +17,7 @@ dependencies = [
     "logfire[psycopg]>=4.30.0",
     "passlib>=1.7.4",
     "polars>=1.39.3",
-    "psycopg>=3.3.3",
+    "psycopg[pool]>=3.3.3",
     "pydantic-ai-slim[anthropic,openai,web]>=1.70.0",
     "pydantic-monty>=0.0.8",
     # Python 3.14 is not supported by urllib3 2.4.0
