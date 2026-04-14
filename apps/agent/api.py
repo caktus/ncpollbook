@@ -3,7 +3,7 @@
 Allows LibreChat (or any OpenAI-compatible client) to use the voter agent
 as a backend by pointing it at http://<host>/v1 with model "voter-agent".
 
-Served by django-bolt (manage.py runbolt --dev).
+Served by uvicorn (uv run uvicorn config.asgi:application).
 
 Endpoints:
     POST /v1/chat/completions
@@ -18,13 +18,11 @@ import time
 import uuid
 from collections.abc import AsyncGenerator
 
-import msgspec
 from django.conf import settings
-from django_bolt import BoltAPI
-from django_bolt.auth import AllowAny, APIKeyAuthentication, IsAuthenticated
-from django_bolt.exceptions import BadRequest
-from django_bolt.health import register_health_checks
-from django_bolt.responses import StreamingResponse
+from django.http import StreamingHttpResponse
+from ninja import NinjaAPI, Schema
+from ninja.security import HttpBearer
+from pydantic import field_validator
 from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, TextPart, UserPromptPart
 
 from apps.agent.models import AgentTool
@@ -34,25 +32,32 @@ _MODEL_ID = "voter-agent"
 
 logger = logging.getLogger(__name__)
 
-# Build auth from AGENT_API_KEY at startup. Bolt strips the "Bearer " prefix
-# automatically when comparing Authorization header values, so api_keys holds the raw key.
-_key = settings.AGENT_API_KEY
-_auth = [APIKeyAuthentication(api_keys={_key}, header="Authorization")] if _key else []
-_guards = [IsAuthenticated()] if _key else [AllowAny()]
 
-api = BoltAPI()
-register_health_checks(api)
+class _BearerAuth(HttpBearer):
+    def authenticate(self, request, token):
+        expected = settings.AGENT_API_KEY
+        if not expected or token == expected:
+            return token
+        return None
+
+
+api = NinjaAPI(urls_namespace="agent")
 
 
 # --- Request schemas ---
 
 
-class Message(msgspec.Struct):
+class Message(Schema):
     role: str
     content: str | list
 
+    @field_validator("content", mode="before")
+    @classmethod
+    def coerce_content(cls, v):
+        return v
 
-class ChatCompletionRequest(msgspec.Struct):
+
+class ChatCompletionRequest(Schema):
     messages: list[Message]
 
 
@@ -123,24 +128,27 @@ async def _sse_stream(
 
 # --- Endpoints ---
 
+# Apply bearer auth only when AGENT_API_KEY is configured.
+_auth: _BearerAuth | None = _BearerAuth() if settings.AGENT_API_KEY else None
 
-@api.post("/v1/chat/completions", auth=_auth, guards=_guards)
-async def chat_completions(body: ChatCompletionRequest) -> StreamingResponse:
+
+@api.post("/v1/chat/completions", auth=_auth)
+async def chat_completions(request, body: ChatCompletionRequest):
     """POST /v1/chat/completions — OpenAI-compatible chat completions (streaming only)."""
 
     logger.debug("chat_completions messages: %s", body.messages)
     user_prompt, history = _parse_messages(body.messages)
     if not user_prompt:
-        raise BadRequest(detail="No user message found")
+        return api.create_response(request, {"detail": "No user message found"}, status=400)
 
     model = await get_tool_model(AgentTool.VOTER_AGENT)
-    return StreamingResponse(
-        _sse_stream(user_prompt, model, history), media_type="text/event-stream"
+    return StreamingHttpResponse(
+        _sse_stream(user_prompt, model, history), content_type="text/event-stream"
     )
 
 
-@api.get("/v1/models", auth=_auth, guards=_guards)
-async def models_list() -> dict:
+@api.get("/v1/models", auth=_auth)
+async def models_list(request):
     """GET /v1/models — returns a static voter-agent model entry."""
     return {
         "object": "list",
@@ -153,3 +161,15 @@ async def models_list() -> dict:
             }
         ],
     }
+
+
+@api.get("/health", auth=None)
+def health(request):
+    """Liveness probe."""
+    return {"status": "ok"}
+
+
+@api.get("/ready", auth=None)
+def ready(request):
+    """Readiness probe."""
+    return {"status": "ok"}

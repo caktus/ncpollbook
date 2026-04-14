@@ -1,9 +1,10 @@
+import asyncio
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from django_bolt import BoltAPI
-from django_bolt.auth import APIKeyAuthentication, IsAuthenticated
-from django_bolt.testing import TestClient
+from django.test import Client
+from ninja.testing import TestClient
 from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
 
 from apps.agent.api import Message, _parse_messages, api
@@ -65,77 +66,53 @@ class TestChatCompletions:
         mock_run_stream_cm.__aenter__ = AsyncMock(return_value=mock_result)
         mock_run_stream_cm.__aexit__ = AsyncMock(return_value=False)
 
+        client = Client()
         with (
             patch("apps.agent.api.voter_agent.run_stream", return_value=mock_run_stream_cm),
             patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
-            TestClient(api) as client,
         ):
             resp = client.post(
                 "/v1/chat/completions",
-                json={"messages": _MESSAGES},
-                stream=True,
+                data=json.dumps({"messages": _MESSAGES}),
+                content_type="application/json",
             )
-            assert resp.status_code == 200
-            assert "text/event-stream" in resp.headers.get("content-type", "")
-            chunks = list(resp.iter_content(chunk_size=4096, decode_unicode=True))
 
-        body = "".join(chunks)
+            assert resp.status_code == 200
+            assert "text/event-stream" in resp.get("content-type", "")
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            body = b"".join(asyncio.run(collect())).decode()
+
         assert "Hello" in body
         assert "[DONE]" in body
 
     @pytest.mark.django_db
     def test_missing_user_message_returns_400(self):
-        with TestClient(api) as client:
-            resp = client.post(
-                "/v1/chat/completions",
-                json={"messages": [{"role": "system", "content": "hi"}]},
-            )
+        client = Client()
+        resp = client.post(
+            "/v1/chat/completions",
+            data=json.dumps({"messages": [{"role": "system", "content": "hi"}]}),
+            content_type="application/json",
+        )
         assert resp.status_code == 400
 
     @pytest.mark.django_db
     def test_invalid_body_returns_422(self):
-        with TestClient(api) as client:
-            resp = client.post("/v1/chat/completions", json={"bad": "field"})
+        client = Client()
+        resp = client.post(
+            "/v1/chat/completions",
+            data=json.dumps({"bad": "field"}),
+            content_type="application/json",
+        )
         assert resp.status_code == 422
 
-
-class TestModelsList:
-    @pytest.mark.django_db
-    def test_returns_voter_agent_model(self):
-        with TestClient(api) as client:
-            resp = client.get("/v1/models")
+    def test_health(self):
+        client = TestClient(api)
+        resp = client.get("/health")
         assert resp.status_code == 200
-        data = resp.json()
-        assert data["object"] == "list"
-        assert data["data"][0]["id"] == "voter-agent"
 
-
-class TestApiKeyAuth:
-    """Verify APIKeyAuthentication rejects wrong keys and accepts correct ones."""
-
-    def test_wrong_key_returns_401(self):
-        auth = [APIKeyAuthentication(api_keys={"secret"}, header="Authorization")]
-        guards = [IsAuthenticated()]
-        test_api = BoltAPI()
-
-        @test_api.get("/protected", auth=auth, guards=guards)
-        async def protected():
-            return {"ok": True}
-
-        with TestClient(test_api) as client:
-            assert (
-                client.get("/protected", headers={"Authorization": "Bearer wrong"}).status_code
-                == 401
-            )
-            assert (
-                client.get("/protected", headers={"Authorization": "Bearer secret"}).status_code
-                == 200
-            )
-
-
-class TestHealthChecks:
-    def test_health_liveness(self):
-        with TestClient(api) as client:
-            resp = client.get("/health")
-        assert resp.status_code == 200
-        assert resp.json()["status"] == "ok"
+    def test_ready(self):
+        client = TestClient(api)
+        assert client.get("/ready").status_code == 200

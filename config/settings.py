@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Third-party
-    "django_bolt",
+    "ninja",
     "django_pgviews",
     # Local
     "apps.ncsbe",
