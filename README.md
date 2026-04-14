@@ -19,7 +19,6 @@ Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialize
 - [SQL Agent (OpenAI-Compatible API)](#sql-agent-openai-compatible-api)
 - [SQL Agent (Web Chat UI)](#sql-agent-web-chat-ui)
 - [SQL Agent (CLI)](#sql-agent-cli)
-- [Docker Deployment](#docker-deployment)
 - [Deployment](#deployment)
 - [Development](#development)
   - [Releasing](#releasing)
@@ -163,21 +162,6 @@ Sample questions:
 The agent has two tools:
 - **run_sql_query** — generates and executes a SQL query, returns a markdown table
 - **run_python_code** — executes LLM-written Python in a secure [Monty](https://github.com/pydantic/monty) sandbox, with `run_sql_query` available for chaining multiple queries
-
-## Docker Deployment
-
-Build and test the production image locally using the deploy compose file:
-
-```bash
-# Build the production image
-COMPOSE_FILE=docker-compose.deploy.yaml docker compose build
-
-# Start the stack (web + PostgreSQL) using the deploy env file
-COMPOSE_FILE=docker-compose.deploy.yaml docker compose up -d
-```
-
-Edit `docker-compose.deploy.env` to set `DJANGO_SECRET_KEY`, database credentials,
-and any model provider API keys before deploying.
 
 ## Deployment
 

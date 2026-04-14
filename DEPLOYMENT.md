@@ -3,6 +3,7 @@
 This document covers deploying NC Pollbook to a Kubernetes cluster on a Framework Desktop (or similar bare-metal host) using MicroK8s, Ansible, and Helm.
 
 - [Deployment](#deployment)
+  - [Building and Testing the Production Image Locally](#building-and-testing-the-production-image-locally)
   - [Prerequisites](#prerequisites)
   - [Initial Host Setup](#initial-host-setup)
   - [Install kubectl and Helm](#install-kubectl-and-helm)
@@ -12,6 +13,21 @@ This document covers deploying NC Pollbook to a Kubernetes cluster on a Framewor
     - [Management commands](#management-commands)
   - [Deploy LibreChat](#deploy-librechat)
   - [Cloudflare DNS (manual steps)](#cloudflare-dns-manual-steps)
+
+## Building and Testing the Production Image Locally
+
+Build and test the production image locally using the deploy compose file:
+
+```bash
+# Build the production image
+COMPOSE_FILE=docker-compose.deploy.yaml docker compose build
+
+# Start the stack (web + PostgreSQL) using the deploy env file
+COMPOSE_FILE=docker-compose.deploy.yaml docker compose up -d
+```
+
+Edit `docker-compose.deploy.env` to set `DJANGO_SECRET_KEY`, database credentials,
+and any model provider API keys before deploying.
 
 ## Prerequisites
 
