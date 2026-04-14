@@ -8,6 +8,7 @@ extraKubeletArgs:
 addons:
   - name: dns
   - name: host-access
+  - name: hostpath-storage
 # 'extraSANs' is a list of extra Subject Alternate Names to add to the local API server.
 # https://canonical.com/microk8s/docs/ref-launch-config
 extraSANs:

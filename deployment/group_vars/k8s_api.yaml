@@ -212,7 +212,7 @@ k8s_whoami_release_values:
 ## LibreChat ##
 
 k8s_librechat_namespace: librechat
-k8s_librechat_chart_version: 0.8.4
+k8s_librechat_chart_version: 2.0.2
 k8s_librechat_hostname: ncpollbook.caktus-built.com
 
 # pwgen -s 32 1 | tr -d '\n' | ansible-vault encrypt_string
@@ -263,13 +263,19 @@ k8s_librechat_release_values:
       APP_TITLE: "NC Voter Data Assistant"
       CUSTOM_FOOTER: ""
       ALLOW_EMAIL_LOGIN: "true"
-      ALLOW_REGISTRATION: "false"
+      ALLOW_REGISTRATION: "true"
       ALLOW_PASSWORD_RESET: "true"
     configYamlContent: "{{ base_librechat_config | to_yaml(sort_keys=False) }}"
   updateStrategy:
     type: Recreate
   podAnnotations:
     checksum/secrets: "{{ k8s_librechat_environment_variables | to_json(sort_keys=True) | hash('sha256') }}"
+  mongodb:
+    image:
+      # Override default Bitnami repo, which we cannot access because it now requires a subscription.
+      # https://github.com/danny-avila/LibreChat/discussions/9939
+      # https://github.com/bitnami/charts/issues/36326#issuecomment-3364507522
+      repository: bitnamilegacy/mongodb
   ingress:
     enabled: true
     className: traefik
