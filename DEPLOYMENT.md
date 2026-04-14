@@ -11,7 +11,6 @@ This document covers deploying NC Pollbook to a Kubernetes cluster on a Framewor
   - [Deploy the ncpollbook app](#deploy-the-ncpollbook-app)
   - [Deploy LibreChat](#deploy-librechat)
   - [Cloudflare DNS (manual steps)](#cloudflare-dns-manual-steps)
-  - [Docker (local testing)](#docker-local-testing)
 
 ## Prerequisites
 
@@ -84,82 +83,35 @@ pwgen -s 32 1 | tr -d '\n' | ansible-vault encrypt_string  # database_password
 Then deploy:
 
 ```sh
-cd deployment/
 ansible-playbook setup.yaml --tags postgres
 ```
 
 ## Deploy Cloudflare Ingress and Traefik
 
 ```sh
-cd deployment/
 ansible-playbook setup.yaml --tags cloudflare-ingress
 ```
 
 ## Deploy the ncpollbook app
 
-Encrypt the required secrets and set them in `deployment/group_vars/k8s_api.yaml`:
-
-```sh
-# From the deployment/ directory:
-pwgen -s 64 1 | tr -d '\n' | ansible-vault encrypt_string  # env_ncpollbook_secret_key
-pwgen -s 32 1 | tr -d '\n' | ansible-vault encrypt_string  # env_ncpollbook_agent_api_key
-```
+Encrypt the required secrets and set them in `deployment/group_vars/k8s_api.yaml`.
 
 Then deploy:
 
 ```sh
-cd deployment/
 ansible-playbook setup.yaml --tags app
 ```
 
 ## Deploy LibreChat
 
-Generate credentials with the [LibreChat Credentials Generator](https://www.librechat.ai/toolkit/creds_generator),
-encrypt each value, and set them in `deployment/group_vars/k8s_api.yaml`:
+Encrypt the required secrets and set them in `deployment/group_vars/k8s_api.yaml`.
+
+Then deploy:
 
 ```sh
-# From the deployment/ directory — run once per variable:
-pwgen -s 32 1 | tr -d '\n' | ansible-vault encrypt_string  # env_librechat_creds_iv
-openssl rand -hex 32 | ansible-vault encrypt_string          # env_librechat_creds_key
-openssl rand -hex 32 | ansible-vault encrypt_string          # env_librechat_jwt_secret
-openssl rand -hex 32 | ansible-vault encrypt_string          # env_librechat_jwt_refresh_secret
-openssl rand -hex 32 | ansible-vault encrypt_string          # env_librechat_meili_master_key
-```
-
-Then deploy (Ansible creates the `librechat-credentials-env` Secret automatically):
-
-```sh
-cd deployment/
 ansible-playbook setup.yaml --tags librechat
 ```
 
 ## Cloudflare DNS (manual steps)
 
-The Cloudflare Tunnel ingress controller automatically registers the tunnel, but DNS CNAME
-records must be created manually in the **Cloudflare dashboard** for each new hostname:
-
-1. Log in to [dash.cloudflare.com](https://dash.cloudflare.com) and select the `caktus-built.com` zone.
-2. Go to **DNS → Records** and add a CNAME for each hostname pointing to the tunnel:
-
-| Name | Target | Proxy |
-|------|--------|-------|
-| `ncpollbook` | `<tunnel-id>.cfargotunnel.com` | Proxied |
-| `app.ncpollbook` | `<tunnel-id>.cfargotunnel.com` | Proxied |
-
-The tunnel ID is shown in the Cloudflare Zero Trust dashboard under **Networks → Tunnels**
-(tunnel name: `ncpollbook-ingress-tunnel`).
-
-## Docker (local testing)
-
-Build and test the production image locally using the deploy compose file:
-
-```bash
-# Build the production image
-COMPOSE_FILE=docker-compose.deploy.yaml docker compose build
-
-# Start the stack (web + PostgreSQL) using the deploy env file
-COMPOSE_FILE=docker-compose.deploy.yaml docker compose up -d
-```
-
-Edit `docker-compose.deploy.env` to set `DJANGO_SECRET_KEY`, database credentials,
-and any model provider API keys before deploying.
+The Cloudflare Tunnel ingress controller automatically registers the tunnel and updates the DNS records.

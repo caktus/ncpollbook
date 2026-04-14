@@ -129,8 +129,6 @@ k8s_tailscale_release_values:
     hostname: ncpollbook-k8s-api
 
 k8s_whoami_hostname: cf-whoami.caktus-built.com
-k8s_librechat_hostname: ncpollbook.caktus-built.com
-k8s_ncpollbook_hostname: app.ncpollbook.caktus-built.com
 
 k8s_traefik_chart_version: 39.0.7
 k8s_traefik_namespace: traefik
@@ -215,6 +213,7 @@ k8s_whoami_release_values:
 
 k8s_librechat_namespace: librechat
 k8s_librechat_chart_version: 0.8.4
+k8s_librechat_hostname: ncpollbook.caktus-built.com
 
 # pwgen -s 32 1 | tr -d '\n' | ansible-vault encrypt_string
 env_librechat_creds_key: "<encrypted>"
@@ -284,6 +283,7 @@ k8s_librechat_release_values:
 
 k8s_ncpollbook_namespace: ncpollbook
 k8s_ncpollbook_chart_version: 0.1.0
+k8s_ncpollbook_hostname: ncpollbook-app.caktus-built.com
 
 # pwgen -s 64 1 | tr -d '\n' | ansible-vault encrypt_string
 env_ncpollbook_secret_key: !vault |
