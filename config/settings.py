@@ -87,17 +87,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": dj_database_url.config(
         default="postgresql://postgres@localhost:5432/ncpollbook",
-        conn_max_age=0,  # Required for psycopg pool
+        conn_max_age=0,  # Required for ASGI (django-bolt)
         ssl_require=os.getenv("DATABASE_SSL_REQUIRE", "False") == "True",
-    )
-    | {
-        "OPTIONS": {
-            "pool": {
-                "min_size": int(os.getenv("DB_POOL_MIN_SIZE", 2)),
-                "max_size": int(os.getenv("DB_POOL_MAX_SIZE", 10)),
-            }
-        }
-    },
+    ),
 }
 # django-pgviews-redux settings:
 # - CHECK_SQL_CHANGED: Skip recreating views if their SQL definition hasn't changed
