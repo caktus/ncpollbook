@@ -87,7 +87,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": dj_database_url.config(
         default="postgresql://postgres@localhost:5432/ncpollbook",
-        conn_max_age=int(os.getenv("CONN_MAX_AGE", 600)),
+        conn_max_age=0,  # Required for ASGI (django-bolt)
         ssl_require=os.getenv("DATABASE_SSL_REQUIRE", "False") == "True",
     ),
 }
