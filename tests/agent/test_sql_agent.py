@@ -5,13 +5,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import psycopg
 import pytest
 from asgiref.sync import async_to_sync
+from django.conf import settings
 from django.db import connection
+from django.test import override_settings
 from pydantic_ai.exceptions import ModelRetry
 from pydantic_ai.models.openai import OpenAIChatModel
 
 from apps.agent.models import AgentTool, ModelIdentifier, ToolModel
 from apps.agent.sql_agent import (
-    _LM_STUDIO_BASE_URL,
     Success,
     _is_safe_select_query,
     _sql_system_prompt,
@@ -167,7 +168,13 @@ class TestResolveModel:
     def test_lmstudio_uses_correct_base_url(self):
         result = resolve_model("lmstudio:any-model")
         assert isinstance(result, OpenAIChatModel)
-        assert _LM_STUDIO_BASE_URL in str(result.client.base_url)
+        assert settings.LM_STUDIO_BASE_URL in str(result.client.base_url)
+
+    def test_lmstudio_uses_settings_base_url(self):
+        with override_settings(LM_STUDIO_BASE_URL="http://custom-host:5678/v1"):
+            result = resolve_model("lmstudio:any-model")
+        assert isinstance(result, OpenAIChatModel)
+        assert "http://custom-host:5678/v1" in str(result.client.base_url)
 
     def test_anthropic_prefix_returned_as_string(self):
         assert (

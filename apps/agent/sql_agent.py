@@ -14,6 +14,7 @@ import logfire
 import psycopg
 import pydantic_monty
 from asgiref.sync import sync_to_async
+from django.conf import settings
 from django.db import connection as django_connection
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ModelRetry, RunContext
@@ -32,8 +33,6 @@ logfire.instrument_pydantic_ai()
 
 logger = logging.getLogger(__name__)
 
-_LM_STUDIO_BASE_URL = "http://localhost:1234/v1"
-
 
 def resolve_model(model_str: str) -> str | OpenAIChatModel:
     """Resolve a model string to a pydantic-ai model.
@@ -46,7 +45,7 @@ def resolve_model(model_str: str) -> str | OpenAIChatModel:
         model_name = model_str[len("lmstudio:") :]
         return OpenAIChatModel(
             model_name,
-            provider=OpenAIProvider(base_url=_LM_STUDIO_BASE_URL, api_key="lm-studio"),
+            provider=OpenAIProvider(base_url=settings.LM_STUDIO_BASE_URL, api_key="lm-studio"),
         )
     return model_str
 
