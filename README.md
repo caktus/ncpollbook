@@ -17,12 +17,11 @@ Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialize
   - [AWS Bedrock](#aws-bedrock)
   - [Anthropic API](#anthropic-api)
 - [SQL Agent (OpenAI-Compatible API)](#sql-agent-openai-compatible-api)
-- [SQL Agent (Web Chat UI)](#sql-agent-web-chat-ui)
+  - [LibreChat](#librechat)
 - [SQL Agent (CLI)](#sql-agent-cli)
-- [Docker Deployment](#docker-deployment)
+- [Testing and Linting](#testing-and-linting)
+- [Releasing](#releasing)
 - [Deployment](#deployment)
-- [Development](#development)
-  - [Releasing](#releasing)
 
 ## Setup
 
@@ -103,32 +102,75 @@ Model names use the `anthropic:` prefix (e.g. `anthropic:claude-sonnet-4-6`).
 
 ## SQL Agent (OpenAI-Compatible API)
 
-An OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`) served by [django-bolt](https://bolt.farhana.li/).
+An OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`) served by [django-ninja](https://django-ninja.dev/) and [Daphne](https://github.com/django/daphne) (ASGI).
 Point LibreChat or any OpenAI-compatible client at `http://<host>:8000/v1` with model `voter-agent`.
 
 Optionally protect the API with an API key by setting `AGENT_API_KEY` in the environment. Clients
 send it as `Authorization: Bearer <key>`.
 
 ```bash
-# Start the async API server (serves API, Django admin, and docs on port 8000)
-uv run manage.py runbolt --dev
+# Start the async API server (serves API, Django admin, and OpenAPI docs on port 8000)
+uv run manage.py runserver
 
 # Health endpoints (no auth required)
 # GET /health  — liveness probe
-# GET /ready   — readiness probe with service checks
+# GET /ready   — readiness probe (checks database connectivity)
 # Django admin available at http://127.0.0.1:8000/admin/
+# OpenAPI docs available at http://127.0.0.1:8000/api/docs
 ```
 
-## SQL Agent (Web Chat UI)
+### LibreChat
 
-An AI agent can query the `VoterView` and `VoterEventView` materialized views via natural language.
+To run LibreChat locally, follow the [Local Installation - Docker](https://www.librechat.ai/docs/local/docker) guide to clone the repo.
+
+Then we need to configure LibreChat to use our local API. First we create a
+custom config YAML file:
+
+```yaml
+# file: librechat.yaml
+version: 1.3.7
+cache: true
+
+endpoints:
+  custom:
+    - name: "Django-Backend"
+      # The URL where your Django app serves the OpenAI-compatible API
+      baseURL: "http://host.docker.internal:8000/v1" 
+      # Reference a variable in your .env file
+      apiKey: "apikey"
+      models:
+        # List the models your Django app supports
+        default: ["voter-agent"] 
+        # Set to true if your Django app has a /models endpoint
+        fetch: true 
+      titleConvo: true
+      modelDisplayLabel: "NC Voter Data Agent"
+```
+
+Then we create a compose override file to mount the config and set the
+environment variable:
+
+```yaml
+# file: docker-compose.override.yml
+
+services:
+  api:
+    volumes:
+    - type: bind
+      source: ./librechat.yaml
+      target: /app/librechat.yaml
+```
+
+Start the server with the override:
 
 ```bash
-# Start the web chat UI
-uv run uvicorn apps.agent.web:app --host 127.0.0.1 --port 7932
+docker compose up -d
 ```
 
-Then open [http://127.0.0.1:7932](http://127.0.0.1:7932) in your browser.
+Now open the LibreChat UI at http://localhost:3080/login. 
+
+As noted in the docs, the first account you register becomes the admin account.
+There are no default credentials.
 
 ## SQL Agent (CLI)
 
@@ -164,31 +206,9 @@ The agent has two tools:
 - **run_sql_query** — generates and executes a SQL query, returns a markdown table
 - **run_python_code** — executes LLM-written Python in a secure [Monty](https://github.com/pydantic/monty) sandbox, with `run_sql_query` available for chaining multiple queries
 
-## Docker Deployment
-
-Build and test the production image locally using the deploy compose file:
+## Testing and Linting
 
 ```bash
-# Build the production image
-COMPOSE_FILE=docker-compose.deploy.yaml docker compose build
-
-# Start the stack (web + PostgreSQL) using the deploy env file
-COMPOSE_FILE=docker-compose.deploy.yaml docker compose up -d
-```
-
-Edit `docker-compose.deploy.env` to set `DJANGO_SECRET_KEY`, database credentials,
-and any model provider API keys before deploying.
-
-## Deployment
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for Kubernetes/Ansible deployment instructions.
-
-## Development
-
-```bash
-# Run development server
-uv run manage.py runserver
-
 # Run tests (LLM evals skipped by default)
 uv run pytest
 
@@ -202,7 +222,7 @@ uv run pytest -m ''
 uv run pre-commit run --all-files
 ```
 
-### Releasing
+## Releasing
 
 1. Bump the version in `pyproject.toml`:
    ```sh
@@ -215,3 +235,7 @@ uv run pre-commit run --all-files
    - Publish the release
 
    When the release is published, CI automatically builds and publishes a new Docker image.
+
+## Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Kubernetes/Ansible deployment instructions.

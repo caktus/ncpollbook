@@ -2,7 +2,7 @@ name: docker-publish
 
 on:
   push:
-    branches: [main, framework1-lmstudio]
+    branches: [main, django-streaming]
     # Publish semver tags as releases.
     tags: ["v*.*.*"]
 

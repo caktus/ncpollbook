@@ -8,10 +8,11 @@ dependencies = [
     "bcrypt<4.0.0",
     "boto3>=1.42.74",
     "click>=8.3.1",
+    "daphne>=4.2.1",
     "dj-database-url>=3.1.2",
     "django>=6.0.3",
-    "django-bolt>=0.7.4",
     "django-click>=2.5.0",
+    "django-ninja>=1.6.2",
     "django-pgviews-redux>=1.2.0",
     "httpx>=0.28.1",
     "logfire[psycopg]>=4.30.0",
@@ -24,6 +25,8 @@ dependencies = [
     # https://github.com/crate/crate-python/issues/708
     # https://github.com/aws/containers-roadmap/issues/2638
     "urllib3<2.4.0",
+    "uvicorn>=0.44.0",
+    "whitenoise>=6.12.0",
 ]
 
 [dependency-groups]
@@ -81,6 +84,7 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-m 'not llm'"
+norecursedirs = ["deployment"]
 markers = [
     "llm: evals that call a real LLM; skipped by default, run with -m llm",
 ]
