@@ -3,6 +3,7 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from django.db import OperationalError
 from django.test import Client
 from ninja.testing import TestClient
 from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
@@ -113,6 +114,13 @@ class TestChatCompletions:
         resp = client.get("/health")
         assert resp.status_code == 200
 
+    @pytest.mark.django_db
     def test_ready(self):
         client = TestClient(api)
         assert client.get("/ready").status_code == 200
+
+    def test_ready_db_failure_returns_503(self):
+        client = TestClient(api)
+        with patch("apps.agent.api.connection.cursor", side_effect=OperationalError("db down")):
+            resp = client.get("/ready")
+        assert resp.status_code == 503

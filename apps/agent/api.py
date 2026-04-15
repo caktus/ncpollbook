@@ -19,6 +19,7 @@ import uuid
 from collections.abc import AsyncGenerator
 
 from django.conf import settings
+from django.db import OperationalError, connection
 from django.http import StreamingHttpResponse
 from ninja import NinjaAPI, Schema
 from ninja.security import HttpBearer
@@ -171,5 +172,10 @@ def health(request):
 
 @api.get("/ready", auth=None)
 def ready(request):
-    """Readiness probe."""
+    """Readiness probe — checks database connectivity."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except OperationalError:
+        return api.create_response(request, {"status": "error"}, status=503)
     return {"status": "ok"}

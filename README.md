@@ -102,7 +102,7 @@ Model names use the `anthropic:` prefix (e.g. `anthropic:claude-sonnet-4-6`).
 
 ## SQL Agent (OpenAI-Compatible API)
 
-An OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`) served by [django-ninja](https://django-ninja.dev/) and [uvicorn](https://www.uvicorn.org/).
+An OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`) served by [django-ninja](https://django-ninja.dev/) and [Daphne](https://github.com/django/daphne) (ASGI).
 Point LibreChat or any OpenAI-compatible client at `http://<host>:8000/v1` with model `voter-agent`.
 
 Optionally protect the API with an API key by setting `AGENT_API_KEY` in the environment. Clients
@@ -110,11 +110,11 @@ send it as `Authorization: Bearer <key>`.
 
 ```bash
 # Start the async API server (serves API, Django admin, and OpenAPI docs on port 8000)
-uv run uvicorn config.asgi:application --reload
+uv run manage.py runserver
 
 # Health endpoints (no auth required)
 # GET /health  — liveness probe
-# GET /ready   — readiness probe
+# GET /ready   — readiness probe (checks database connectivity)
 # Django admin available at http://127.0.0.1:8000/admin/
 # OpenAPI docs available at http://127.0.0.1:8000/api/docs
 ```
