@@ -4,7 +4,7 @@
 [![tests](https://github.com/caktus/ncpollbook/actions/workflows/tests.yml/badge.svg)](https://github.com/caktus/ncpollbook/actions/workflows/tests.yml)
 [![docker-publish](https://github.com/caktus/ncpollbook/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/caktus/ncpollbook/actions/workflows/docker-publish.yml)
 
-NC Pollbook is an exploratory Django web app for importing, loading, and analyzing North Carolina State Board of Elections (NCSBE) voter registration and history data with LLMs.
+NC Pollbook is an exploratory Django web app for importing and analyzing North Carolina State Board of Elections (NCSBE) voter registration and history data with LLMs.
 
 It combines a Django/PostgreSQL ETL pipeline and materialized views with a Pydantic AI SQL agent that answers analytical questions over the voter dataset in CLI and web chat interfaces.
 
@@ -20,8 +20,9 @@ Built with Django 6.x, PostgreSQL 18, and `django-pgviews-redux` for materialize
 - [SQL Agent (Web Chat UI)](#sql-agent-web-chat-ui)
 - [SQL Agent (CLI)](#sql-agent-cli)
 - [Docker Deployment](#docker-deployment)
-- [Deployment](DEPLOYMENT.md)
+- [Deployment](#deployment)
 - [Development](#development)
+  - [Releasing](#releasing)
 
 ## Setup
 
@@ -200,3 +201,17 @@ uv run pytest -m ''
 # Run linters
 uv run pre-commit run --all-files
 ```
+
+### Releasing
+
+1. Bump the version in `pyproject.toml`:
+   ```sh
+   uv version --bump patch  # or --bump minor/major
+   ```
+
+2. Create a new release on GitHub:
+   - Tag the version (e.g., `v0.2.1`)
+   - Add the release notes
+   - Publish the release
+
+   When the release is published, CI automatically builds and publishes a new Docker image.
