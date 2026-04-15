@@ -297,6 +297,9 @@ k8s_librechat_environment_variables:
   EMAIL_PASSWORD: "{{ env_email_password }}"
   DOMAIN_CLIENT: "https://{{ k8s_librechat_hostname }}"
   DOMAIN_SERVER: "https://{{ k8s_librechat_hostname }}"
+  ENDPOINTS: "custom,anthropic"
+  ANTHROPIC_MODELS: "claude-haiku-4-5,claude-sonnet-4-6"
+  ANTHROPIC_API_KEY: "{{ env_anthropic_api_key }}"
 
 # librechat.yaml configuration: https://www.librechat.ai/docs/configuration/librechat_yaml
 base_librechat_config:
