@@ -409,6 +409,7 @@ k8s_ncpollbook_release_values:
     AWS_BEARER_TOKEN_BEDROCK: "{{ env_bedrock_api_key }}"
     AWS_DEFAULT_REGION: 'us-east-2'
     LM_STUDIO_BASE_URL: "http://framework1:1234/v1"
+    CSRF_TRUSTED_ORIGINS: "https://{{ k8s_ncpollbook_hostname }}"
   ingress:
     enabled: true
     className: traefik

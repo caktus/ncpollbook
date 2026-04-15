@@ -33,6 +33,10 @@ DEBUG = os.getenv("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
+# Required when Django is behind a reverse proxy serving HTTPS.
+# e.g. CSRF_TRUSTED_ORIGINS=https://ncpollbook-app.caktus-built.com
+CSRF_TRUSTED_ORIGINS = [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+
 
 # Application definition
 
