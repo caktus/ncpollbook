@@ -23,7 +23,7 @@ from django.db import OperationalError, connection
 from django.http import StreamingHttpResponse
 from ninja import NinjaAPI, Schema
 from ninja.security import HttpBearer
-from pydantic import field_validator
+from pydantic import ConfigDict, field_validator
 from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, TextPart, UserPromptPart
 
 from apps.agent.models import AgentTool
@@ -59,6 +59,18 @@ class Message(Schema):
 
 
 class ChatCompletionRequest(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "messages": [
+                        {"role": "user", "content": "How many active voters are in Durham County?"}
+                    ]
+                }
+            ]
+        }
+    )
+
     messages: list[Message]
 
 
