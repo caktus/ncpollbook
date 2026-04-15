@@ -24,10 +24,30 @@ from django.http import StreamingHttpResponse
 from ninja import NinjaAPI, Schema
 from ninja.security import HttpBearer
 from pydantic import ConfigDict, field_validator
-from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, TextPart, UserPromptPart
+from pydantic_ai import Agent
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    PartDeltaEvent,
+    TextPart,
+    TextPartDelta,
+    UserPromptPart,
+)
+from pydantic_ai.run import AgentRunResultEvent
 
 from apps.agent.models import AgentTool
 from apps.agent.sql_agent import get_tool_model, voter_agent
+
+# LibreChat sends a title-generation message through the same endpoint.
+# Route these to a tool-less agent so the voter agent never tries to run queries.
+_TITLE_REQUEST_PREFIX = "Provide a concise, 5-word-or-less title"
+_title_agent: Agent[None, str] = Agent()
+
+
+def _is_title_request(prompt: str) -> bool:
+    return prompt.startswith(_TITLE_REQUEST_PREFIX)
+
 
 _MODEL_ID = "voter-agent"
 
@@ -129,12 +149,15 @@ async def _sse_stream(
         }
         return f"data: {json.dumps(data)}\n\n".encode()
 
+    agent = _title_agent if _is_title_request(question) else voter_agent
     yield _chunk({"role": "assistant", "content": ""}, None)
-    async with voter_agent.run_stream(
+    async for event in agent.run_stream_events(
         question, model=model, message_history=history or None
-    ) as result:
-        async for delta in result.stream_text(delta=True):
-            yield _chunk({"content": delta}, None)
+    ):
+        if isinstance(event, AgentRunResultEvent):
+            break
+        if isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
+            yield _chunk({"content": event.delta.content_delta}, None)
     yield _chunk({}, "stop")
     yield b"data: [DONE]\n\n"
 
