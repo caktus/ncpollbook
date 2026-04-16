@@ -180,7 +180,7 @@ async def _sse_stream(
     question: str, model: str, history: list[ModelMessage]
 ) -> AsyncGenerator[bytes]:
     """Async generator yielding SSE chunks for real token streaming."""
-    logger.debug("sse_stream start prompt=%r history_len=%d", question[:80], len(history))
+    logger.info("sse_stream start prompt=%r history_len=%d", question[:80], len(history))
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
 

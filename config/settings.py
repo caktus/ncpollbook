@@ -172,7 +172,13 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": "WARNING"},
     "loggers": {
         "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
-        "apps.agent.api": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        # Set AGENT_API_LOG_LEVEL=DEBUG to see per-event streaming logs.
+        "apps.agent.api": {
+            "handlers": ["console"],
+            "level": os.getenv("AGENT_API_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "apps.agent.sql_agent": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
     },
 }
 

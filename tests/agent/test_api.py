@@ -258,6 +258,34 @@ class TestChatCompletionsLogging:
         logged_msg = mock_logger.info.call_args[0][0]
         assert "chat_completions" in logged_msg
 
+    @pytest.mark.django_db
+    def test_event_stream_logged_at_debug_level(self):
+        """event_stream is logged at DEBUG so it is suppressed at the default INFO level."""
+
+        async def fake_events():
+            yield PartDeltaEvent(index=0, delta=TextPartDelta(content_delta="hi"))
+
+        client = Client()
+        with (
+            patch("apps.agent.api.voter_agent.run_stream_events", return_value=fake_events()),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+            patch("apps.agent.api.logger") as mock_logger,
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
+                content_type="application/json",
+            )
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            asyncio.run(collect())
+        event_debug_calls = [
+            c for c in mock_logger.debug.call_args_list if "event_stream" in str(c)
+        ]
+        assert event_debug_calls, "event_stream should be logged at DEBUG level"
+
 
 class TestOpenAITypes:
     @pytest.mark.django_db
