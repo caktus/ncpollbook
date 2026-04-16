@@ -178,7 +178,7 @@ async def _sse_stream(
     async for event in agent.run_stream_events(
         question, model=model, message_history=history or None
     ):
-        logger.debug("sse_stream event=%s", type(event).__name__)
+        logger.debug("event_stream %s", event)
         if isinstance(event, AgentRunResultEvent):
             break
         if (
