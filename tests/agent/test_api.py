@@ -10,6 +10,7 @@ from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
     PartDeltaEvent,
+    PartStartEvent,
     TextPart,
     TextPartDelta,
     UserPromptPart,
@@ -98,6 +99,34 @@ class TestChatCompletions:
             body = b"".join(asyncio.run(collect())).decode()
 
         assert "Hello" in body
+        assert "[DONE]" in body
+
+    @pytest.mark.django_db
+    def test_part_start_event_content_is_streamed(self):
+        """PartStartEvent initial TextPart content must not be dropped."""
+
+        async def fake_events():
+            yield PartStartEvent(index=0, part=TextPart(content="The "))
+            yield PartDeltaEvent(index=0, delta=TextPartDelta(content_delta="counties"))
+
+        client = Client()
+        with (
+            patch("apps.agent.api.voter_agent.run_stream_events", return_value=fake_events()),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": _MESSAGES}),
+                content_type="application/json",
+            )
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            body = b"".join(asyncio.run(collect())).decode()
+
+        assert "The " in body
+        assert "counties" in body
         assert "[DONE]" in body
 
     @pytest.mark.django_db

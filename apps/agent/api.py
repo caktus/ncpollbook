@@ -30,6 +30,7 @@ from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
     PartDeltaEvent,
+    PartStartEvent,
     TextPart,
     TextPartDelta,
     UserPromptPart,
@@ -156,7 +157,13 @@ async def _sse_stream(
     ):
         if isinstance(event, AgentRunResultEvent):
             break
-        if isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
+        if (
+            isinstance(event, PartStartEvent)
+            and isinstance(event.part, TextPart)
+            and event.part.has_content()
+        ):
+            yield _chunk({"content": event.part.content}, None)
+        elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
             yield _chunk({"content": event.delta.content_delta}, None)
     yield _chunk({}, "stop")
     yield b"data: [DONE]\n\n"
