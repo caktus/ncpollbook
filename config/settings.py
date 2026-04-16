@@ -160,30 +160,19 @@ LOGGING = {
     "disable_existing_loggers": False,
     "handlers": {
         "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "class": "rich.logging.RichHandler",
+            "formatter": "rich",
+            "rich_tracebacks": True,
+            "tracebacks_show_locals": True,
         },
     },
     "formatters": {
-        "simple": {
-            "format": "%(levelname)s %(name)s %(message)s",
-        },
+        "rich": {"datefmt": "[%X]", "format": "%(message)s"},
     },
-    "root": {
-        "handlers": ["console"],
-        "level": "WARNING",
-    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
     "loggers": {
-        "apps": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "apps.agent.api": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
+        "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "apps.agent.api": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
     },
 }
 
