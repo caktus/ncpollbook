@@ -12,7 +12,6 @@ Endpoints:
     GET  /ready
 """
 
-import json
 import logging
 import time
 import uuid
@@ -23,6 +22,12 @@ from django.db import OperationalError, connection
 from django.http import StreamingHttpResponse
 from ninja import NinjaAPI, Schema
 from ninja.security import HttpBearer
+from openai.types import CompletionUsage
+from openai.types.chat import ChatCompletion, ChatCompletionChunk
+from openai.types.chat.chat_completion import Choice as CompletionChoice
+from openai.types.chat.chat_completion_chunk import Choice as ChunkChoice
+from openai.types.chat.chat_completion_chunk import ChoiceDelta
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from pydantic import ConfigDict, field_validator
 from pydantic_ai import Agent
 from pydantic_ai.messages import (
@@ -139,20 +144,20 @@ async def _complete_non_streaming(question: str, model: str, history: list[Model
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     agent = _title_agent if _is_title_request(question) else voter_agent
     result = await agent.run(question, model=model, message_history=history or None)
-    return {
-        "id": completion_id,
-        "object": "chat.completion",
-        "created": int(time.time()),
-        "model": _MODEL_ID,
-        "choices": [
-            {
-                "index": 0,
-                "message": {"role": "assistant", "content": str(result.output)},
-                "finish_reason": "stop",
-            }
+    return ChatCompletion(
+        id=completion_id,
+        object="chat.completion",
+        created=int(time.time()),
+        model=_MODEL_ID,
+        choices=[
+            CompletionChoice(
+                index=0,
+                message=ChatCompletionMessage(role="assistant", content=str(result.output)),
+                finish_reason="stop",
+            )
         ],
-        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-    }
+        usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
+    ).model_dump(exclude_none=True)
 
 
 async def _sse_stream(
@@ -163,18 +168,18 @@ async def _sse_stream(
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
 
-    def _chunk(delta: dict, finish_reason: str | None) -> bytes:
-        data = {
-            "id": completion_id,
-            "object": "chat.completion.chunk",
-            "created": created,
-            "model": _MODEL_ID,
-            "choices": [{"index": 0, "delta": delta, "finish_reason": finish_reason}],
-        }
-        return f"data: {json.dumps(data)}\n\n".encode()
+    def _chunk(delta: ChoiceDelta, finish_reason: str | None) -> bytes:
+        data = ChatCompletionChunk(
+            id=completion_id,
+            created=created,
+            model=_MODEL_ID,
+            object="chat.completion.chunk",
+            choices=[ChunkChoice(index=0, delta=delta, finish_reason=finish_reason)],
+        )
+        return f"data: {data.model_dump_json(exclude_none=True)}\n\n".encode()
 
     agent = _title_agent if _is_title_request(question) else voter_agent
-    yield _chunk({"role": "assistant", "content": ""}, None)
+    yield _chunk(ChoiceDelta(role="assistant", content=""), None)
     async for event in agent.run_stream_events(
         question, model=model, message_history=history or None
     ):
@@ -186,10 +191,10 @@ async def _sse_stream(
             and isinstance(event.part, TextPart)
             and event.part.has_content()
         ):
-            yield _chunk({"content": event.part.content}, None)
+            yield _chunk(ChoiceDelta(content=event.part.content), None)
         elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
-            yield _chunk({"content": event.delta.content_delta}, None)
-    yield _chunk({}, "stop")
+            yield _chunk(ChoiceDelta(content=event.delta.content_delta), None)
+    yield _chunk(ChoiceDelta(), "stop")
     yield b"data: [DONE]\n\n"
 
 
