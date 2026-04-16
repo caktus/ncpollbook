@@ -31,6 +31,8 @@ from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from pydantic import ConfigDict, field_validator
 from pydantic_ai import Agent
 from pydantic_ai.messages import (
+    FunctionToolCallEvent,
+    FunctionToolResultEvent,
     ModelMessage,
     ModelRequest,
     ModelResponse,
@@ -40,6 +42,7 @@ from pydantic_ai.messages import (
     TextPartDelta,
     ThinkingPart,
     ThinkingPartDelta,
+    ToolReturnPart,
     UserPromptPart,
 )
 from pydantic_ai.run import AgentRunResultEvent
@@ -104,6 +107,17 @@ class ChatCompletionRequest(Schema):
 
 
 # --- Helpers ---
+
+
+def _extract_sql_block(content: str) -> str | None:
+    """Extract the first ```sql ... ``` block from a tool result string."""
+    start = content.find("```sql\n")
+    if start == -1:
+        return None
+    end = content.find("\n```", start + 7)
+    if end == -1:
+        return None
+    return content[start : end + 4]
 
 
 def _extract_text(content: str | list) -> str:
@@ -198,6 +212,16 @@ async def _sse_stream(
                 yield _chunk(ChoiceDelta(content=event.delta.content_delta), None)
             elif isinstance(event.delta, ThinkingPartDelta) and event.delta.content_delta:
                 yield _chunk(ChoiceDelta(reasoning_content=event.delta.content_delta), None)
+        elif isinstance(event, FunctionToolCallEvent):
+            question_arg = event.part.args_as_dict().get("question", "")
+            if question_arg:
+                yield _chunk(ChoiceDelta(reasoning_content=f"Querying: {question_arg}\n"), None)
+        elif isinstance(event, FunctionToolResultEvent) and isinstance(
+            event.result, ToolReturnPart
+        ):
+            sql = _extract_sql_block(event.result.model_response_str())
+            if sql:
+                yield _chunk(ChoiceDelta(reasoning_content=f"\n{sql}\n"), None)
     yield _chunk(ChoiceDelta(), "stop")
     yield b"data: [DONE]\n\n"
 

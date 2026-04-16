@@ -7,6 +7,8 @@ from django.db import OperationalError
 from django.test import Client
 from ninja.testing import TestClient
 from pydantic_ai.messages import (
+    FunctionToolCallEvent,
+    FunctionToolResultEvent,
     ModelRequest,
     ModelResponse,
     PartDeltaEvent,
@@ -15,10 +17,11 @@ from pydantic_ai.messages import (
     TextPartDelta,
     ThinkingPart,
     ThinkingPartDelta,
+    ToolReturnPart,
     UserPromptPart,
 )
 
-from apps.agent.api import Message, _is_title_request, _parse_messages, api
+from apps.agent.api import Message, _extract_sql_block, _is_title_request, _parse_messages, api
 
 _MESSAGES = [{"role": "user", "content": "how many active voters are there?"}]
 
@@ -374,3 +377,86 @@ class TestThinkingStreaming:
         ]
         assert reasoning_chunks
         assert reasoning_chunks[0]["choices"][0]["delta"]["reasoning_content"] == "initial thought"
+
+
+class TestExtractSqlBlock:
+    def test_extracts_sql_from_fenced_block(self):
+        content = "```sql\nSELECT 1\n```\n\n| col |\n|---|\n| 1 |"
+        assert _extract_sql_block(content) == "```sql\nSELECT 1\n```"
+
+    def test_returns_none_when_no_sql_block(self):
+        assert _extract_sql_block("_No results_") is None
+
+    def test_returns_none_for_empty_string(self):
+        assert _extract_sql_block("") is None
+
+
+class TestSqlInThinkingStream:
+    @pytest.mark.django_db
+    def test_tool_call_emits_question_as_reasoning(self):
+        """FunctionToolCallEvent for run_sql_query must emit the question as reasoning_content."""
+
+        async def fake_events():
+            part = MagicMock()
+            part.tool_name = "run_sql_query"
+            part.args_as_dict.return_value = {"question": "how many voters?"}
+            yield FunctionToolCallEvent(part=part, event_kind="function_tool_call")
+
+        client = Client()
+        with (
+            patch("apps.agent.api.voter_agent.run_stream_events", return_value=fake_events()),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
+                content_type="application/json",
+            )
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            body = b"".join(asyncio.run(collect())).decode()
+
+        data_lines = [
+            json.loads(line[6:]) for line in body.splitlines() if line.startswith("data: {")
+        ]
+        reasoning = [c for c in data_lines if c["choices"][0]["delta"].get("reasoning_content")]
+        assert any(
+            "how many voters?" in r["choices"][0]["delta"]["reasoning_content"] for r in reasoning
+        )
+
+    @pytest.mark.django_db
+    def test_tool_result_emits_sql_as_reasoning(self):
+        """FunctionToolResultEvent for run_sql_query must emit the SQL block as reasoning_content."""
+        sql_content = "```sql\nSELECT COUNT(*) FROM voter_view\n```\n\n| count |\n|---|\n| 42 |"
+
+        async def fake_events():
+            result = MagicMock(spec=ToolReturnPart)
+            result.tool_name = "run_sql_query"
+            result.model_response_str.return_value = sql_content
+            yield FunctionToolResultEvent(result=result, event_kind="function_tool_result")
+
+        client = Client()
+        with (
+            patch("apps.agent.api.voter_agent.run_stream_events", return_value=fake_events()),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
+                content_type="application/json",
+            )
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            body = b"".join(asyncio.run(collect())).decode()
+
+        data_lines = [
+            json.loads(line[6:]) for line in body.splitlines() if line.startswith("data: {")
+        ]
+        reasoning = [c for c in data_lines if c["choices"][0]["delta"].get("reasoning_content")]
+        assert any(
+            "SELECT COUNT(*)" in r["choices"][0]["delta"]["reasoning_content"] for r in reasoning
+        )
