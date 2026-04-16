@@ -147,6 +147,9 @@ about North Carolina voter registration and history data.
 Only query the views defined below. Do NOT reference any other tables.
 Do NOT include any PII (names, addresses, phone numbers, SSNs).
 
+NOTE: The `ncid` column (North Carolina voter ID) is a public identifier and is NOT PII.
+Queries that filter by a specific ncid value are allowed and safe.
+
 Today's date: {date.today()}
 
 The dataset is current and includes all available elections up to today.
@@ -160,6 +163,7 @@ always generate the SQL query and let the database return zero rows if no data m
 Join the two views using the `ncid` column.
 Always UPPERCASE place names, like county names, in your SQL queries to ensure correct matching.
 By default, filter by registration_status_code = 'A' (active voters) unless the question indicates otherwise.
+Do NOT apply the registration_status_code filter when querying voter event history for a specific ncid.
 
 Example queries:
 
@@ -334,6 +338,11 @@ Never calculate, sum, or repeat numbers from earlier responses. Every number in 
 must come directly from a run_sql_query call made during the current response. If you are
 asked for a summary of counts or totals, call run_sql_query to retrieve each figure.
 
+The `ncid` column (North Carolina voter ID) is a public identifier and is NOT PII.
+Queries filtering by a specific ncid are allowed. When a user provides an ncid and asks
+for that voter's registration info or election history, call run_sql_query with a
+plain-English question that includes the ncid (e.g., "show all elections for ncid ES4965").
+
 Always include the full data table from run_sql_query results in your response.
 Present results clearly in markdown. Never expose PII (names, addresses, phone
-numbers). Reference voters by ncid only if needed."""
+numbers)."""

@@ -54,6 +54,22 @@ _CACHED_COUNT_RESPONSE = (
     "and Orange County has **96,461** active registered voters."
 )
 
+# A refusal to answer an NCID-based query, incorrectly treating NCID as PII
+_NCID_REFUSAL_RESPONSE = (
+    "I am unable to provide information about an individual's personal voting records "
+    "or participation in past elections based on an ID number for privacy and security reasons."
+)
+
+# A correct response to an NCID query — includes SQL and a data table
+_NCID_GOOD_RESPONSE = (
+    "```sql\nSELECT election_date, election_type, voting_method\n"
+    "FROM voter_event_view WHERE ncid = 'ES4965'\nORDER BY election_date\n```\n\n"
+    "| election_date | election_type | voting_method |\n"
+    "| --- | --- | --- |\n"
+    "| 2020-11-03 | GENERAL | ABSENTEE BY MAIL |\n"
+    "| 2022-11-08 | GENERAL | IN-PERSON |\n"
+)
+
 # ---------------------------------------------------------------------------
 # sql_gen_agent LLM-judge dataset
 # ---------------------------------------------------------------------------
@@ -178,3 +194,53 @@ class TestLLMJudgeEvals:
         )
         report = ds.evaluate_sync(lambda _: _CACHED_COUNT_RESPONSE)
         assert report.cases[0].assertions["sql_backed_counts"].value is False
+
+    def test_ncid_refusal_fails_judge(self):
+        """A refusal to answer an NCID query should fail — NCID is not PII."""
+        ds: Dataset[str, str, None] = Dataset(
+            name="ncid_refusal_judge",
+            cases=[
+                Case(
+                    inputs="show me all the elections that this person has participated in. Their NC ID is: ES4965"
+                )
+            ],
+            evaluators=[
+                LLMJudge(
+                    rubric=(
+                        "The response answers the question by providing election history data "
+                        "for the given NCID. A refusal citing 'privacy' or 'PII' should FAIL "
+                        "because NCID is a public identifier, not personal information."
+                    ),
+                    model=_LLM_JUDGE_MODEL,
+                    include_input=True,
+                    assertion={"evaluation_name": "ncid_query_answered"},
+                ),
+            ],
+        )
+        report = ds.evaluate_sync(lambda _: _NCID_REFUSAL_RESPONSE)
+        assert report.cases[0].assertions["ncid_query_answered"].value is False
+
+    def test_ncid_good_response_passes_judge(self):
+        """A proper SQL-backed response to an NCID query should pass."""
+        ds: Dataset[str, str, None] = Dataset(
+            name="ncid_good_judge",
+            cases=[
+                Case(
+                    inputs="show me all the elections that this person has participated in. Their NC ID is: ES4965"
+                )
+            ],
+            evaluators=[
+                LLMJudge(
+                    rubric=(
+                        "The response answers the question by providing election history data "
+                        "for the given NCID, includes a SQL block or data table, and does not "
+                        "expose any PII (names, addresses, phone numbers)."
+                    ),
+                    model=_LLM_JUDGE_MODEL,
+                    include_input=True,
+                    assertion={"evaluation_name": "ncid_query_answered"},
+                ),
+            ],
+        )
+        report = ds.evaluate_sync(lambda _: _NCID_GOOD_RESPONSE)
+        assert report.cases[0].assertions["ncid_query_answered"].value is True

@@ -403,7 +403,7 @@ env_anthropic_api_key: !vault |
 
 k8s_ncpollbook_release_values:
   image:
-    tag: sha-f9f040e
+    tag: sha-5cd479a
   environmentVariables:
     DJANGO_SECRET_KEY: "{{ env_ncpollbook_secret_key }}"
     AGENT_API_KEY: "{{ env_ncpollbook_agent_api_key }}"
