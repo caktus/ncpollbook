@@ -1,6 +1,6 @@
 import asyncio
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from django.db import OperationalError
@@ -86,7 +86,7 @@ class TestChatCompletions:
         ):
             resp = client.post(
                 "/v1/chat/completions",
-                data=json.dumps({"messages": _MESSAGES}),
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
                 content_type="application/json",
             )
 
@@ -116,7 +116,7 @@ class TestChatCompletions:
         ):
             resp = client.post(
                 "/v1/chat/completions",
-                data=json.dumps({"messages": _MESSAGES}),
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
                 content_type="application/json",
             )
 
@@ -154,7 +154,7 @@ class TestChatCompletions:
         ):
             resp = client.post(
                 "/v1/chat/completions",
-                data=json.dumps({"messages": title_messages}),
+                data=json.dumps({"messages": title_messages, "stream": True}),
                 content_type="application/json",
             )
 
@@ -164,6 +164,36 @@ class TestChatCompletions:
             b"".join(asyncio.run(collect()))
 
         mock_title.assert_called_once()
+        mock_voter.assert_not_called()
+
+    @pytest.mark.django_db
+    def test_non_streaming_title_returns_json_completion(self):
+        """Non-streaming title request returns chat.completion JSON with message format."""
+        title_messages = [
+            {
+                "role": "user",
+                "content": "Provide a concise, 5-word-or-less title for the conversation, using title case conventions. Only return the title itself.\n\nConversation:\nUser: q\nAI: r",
+            }
+        ]
+        mock_result = MagicMock()
+        mock_result.output = "Pre-1900 County Voters"
+        client = Client()
+        with (
+            patch("apps.agent.api._title_agent.run", AsyncMock(return_value=mock_result)),
+            patch("apps.agent.api.voter_agent.run") as mock_voter,
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": title_messages}),
+                content_type="application/json",
+            )
+
+        assert resp.status_code == 200
+        assert "application/json" in resp.get("content-type", "")
+        data = json.loads(resp.content)
+        assert data["object"] == "chat.completion"
+        assert data["choices"][0]["message"]["content"] == "Pre-1900 County Voters"
         mock_voter.assert_not_called()
 
     @pytest.mark.django_db

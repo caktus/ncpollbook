@@ -93,6 +93,7 @@ class ChatCompletionRequest(Schema):
     )
 
     messages: list[Message]
+    stream: bool = False
 
 
 # --- Helpers ---
@@ -131,6 +132,27 @@ def _parse_messages(messages: list[Message]) -> tuple[str, list[ModelMessage]]:
             history.append(ModelResponse(parts=[TextPart(content=text)]))
 
     return user_prompt, history
+
+
+async def _complete_non_streaming(question: str, model: str, history: list[ModelMessage]) -> dict:
+    """Run agent without streaming; return an OpenAI chat.completion JSON response."""
+    completion_id = f"chatcmpl-{uuid.uuid4().hex}"
+    agent = _title_agent if _is_title_request(question) else voter_agent
+    result = await agent.run(question, model=model, message_history=history or None)
+    return {
+        "id": completion_id,
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": _MODEL_ID,
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": str(result.output)},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+    }
 
 
 async def _sse_stream(
@@ -177,7 +199,7 @@ _auth: _BearerAuth | None = _BearerAuth() if settings.AGENT_API_KEY else None
 
 @api.post("/v1/chat/completions", auth=_auth)
 async def chat_completions(request, body: ChatCompletionRequest):
-    """POST /v1/chat/completions — OpenAI-compatible chat completions (streaming only)."""
+    """POST /v1/chat/completions — OpenAI-compatible chat completions."""
 
     logger.debug("chat_completions messages: %s", body.messages)
     user_prompt, history = _parse_messages(body.messages)
@@ -185,6 +207,8 @@ async def chat_completions(request, body: ChatCompletionRequest):
         return api.create_response(request, {"detail": "No user message found"}, status=400)
 
     model = await get_tool_model(AgentTool.VOTER_AGENT)
+    if not body.stream:
+        return await _complete_non_streaming(user_prompt, model, history)
     return StreamingHttpResponse(
         _sse_stream(user_prompt, model, history), content_type="text/event-stream"
     )
