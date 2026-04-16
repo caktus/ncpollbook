@@ -38,6 +38,8 @@ from pydantic_ai.messages import (
     PartStartEvent,
     TextPart,
     TextPartDelta,
+    ThinkingPart,
+    ThinkingPartDelta,
     UserPromptPart,
 )
 from pydantic_ai.run import AgentRunResultEvent
@@ -186,14 +188,16 @@ async def _sse_stream(
         logger.debug("event_stream %s", event)
         if isinstance(event, AgentRunResultEvent):
             break
-        if (
-            isinstance(event, PartStartEvent)
-            and isinstance(event.part, TextPart)
-            and event.part.has_content()
-        ):
-            yield _chunk(ChoiceDelta(content=event.part.content), None)
-        elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
-            yield _chunk(ChoiceDelta(content=event.delta.content_delta), None)
+        if isinstance(event, PartStartEvent):
+            if isinstance(event.part, TextPart) and event.part.has_content():
+                yield _chunk(ChoiceDelta(content=event.part.content), None)
+            elif isinstance(event.part, ThinkingPart) and event.part.has_content():
+                yield _chunk(ChoiceDelta(reasoning_content=event.part.content), None)
+        elif isinstance(event, PartDeltaEvent):
+            if isinstance(event.delta, TextPartDelta):
+                yield _chunk(ChoiceDelta(content=event.delta.content_delta), None)
+            elif isinstance(event.delta, ThinkingPartDelta) and event.delta.content_delta:
+                yield _chunk(ChoiceDelta(reasoning_content=event.delta.content_delta), None)
     yield _chunk(ChoiceDelta(), "stop")
     yield b"data: [DONE]\n\n"
 

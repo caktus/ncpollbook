@@ -13,6 +13,8 @@ from pydantic_ai.messages import (
     PartStartEvent,
     TextPart,
     TextPartDelta,
+    ThinkingPart,
+    ThinkingPartDelta,
     UserPromptPart,
 )
 
@@ -303,3 +305,72 @@ class TestOpenAITypes:
         assert data["object"] == "chat.completion"
         assert data["choices"][0]["finish_reason"] == "stop"
         assert data["usage"]["total_tokens"] == 0
+
+
+class TestThinkingStreaming:
+    @pytest.mark.django_db
+    def test_thinking_delta_emits_reasoning_content(self):
+        """ThinkingPartDelta events must produce reasoning_content chunks."""
+
+        async def fake_events():
+            yield PartDeltaEvent(index=0, delta=ThinkingPartDelta(content_delta="thinking..."))
+            yield PartDeltaEvent(index=1, delta=TextPartDelta(content_delta="answer"))
+
+        client = Client()
+        with (
+            patch("apps.agent.api.voter_agent.run_stream_events", return_value=fake_events()),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
+                content_type="application/json",
+            )
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            body = b"".join(asyncio.run(collect())).decode()
+
+        data_lines = [
+            json.loads(line[6:]) for line in body.splitlines() if line.startswith("data: {")
+        ]
+        reasoning_chunks = [
+            c for c in data_lines if c["choices"][0]["delta"].get("reasoning_content")
+        ]
+        text_chunks = [c for c in data_lines if c["choices"][0]["delta"].get("content")]
+        assert reasoning_chunks, "no reasoning_content chunks found"
+        assert reasoning_chunks[0]["choices"][0]["delta"]["reasoning_content"] == "thinking..."
+        assert text_chunks[0]["choices"][0]["delta"]["content"] == "answer"
+
+    @pytest.mark.django_db
+    def test_thinking_part_start_emits_reasoning_content(self):
+        """PartStartEvent with ThinkingPart content must also emit reasoning_content."""
+
+        async def fake_events():
+            yield PartStartEvent(index=0, part=ThinkingPart(content="initial thought"))
+
+        client = Client()
+        with (
+            patch("apps.agent.api.voter_agent.run_stream_events", return_value=fake_events()),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
+                content_type="application/json",
+            )
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            body = b"".join(asyncio.run(collect())).decode()
+
+        data_lines = [
+            json.loads(line[6:]) for line in body.splitlines() if line.startswith("data: {")
+        ]
+        reasoning_chunks = [
+            c for c in data_lines if c["choices"][0]["delta"].get("reasoning_content")
+        ]
+        assert reasoning_chunks
+        assert reasoning_chunks[0]["choices"][0]["delta"]["reasoning_content"] == "initial thought"
