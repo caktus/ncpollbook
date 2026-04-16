@@ -176,6 +176,11 @@ class TestVoterSystemPrompt:
         assert "ncid" in prompt.lower()
         assert "not pii" in prompt.lower()
 
+    def test_must_present_tool_results_to_user(self):
+        prompt = _voter_system_prompt()
+        assert "user cannot see tool output" in prompt.lower()
+        assert "must present" in prompt.lower() or "you must present" in prompt.lower()
+
 
 class TestResolveModel:
     def test_known_prefix_returned_as_string(self):
