@@ -152,6 +152,10 @@ class TestVoterSystemPrompt:
         prompt = _voter_system_prompt()
         assert "dataset is current" in prompt.lower()
 
+    def test_always_include_full_data_table(self):
+        prompt = _voter_system_prompt()
+        assert "full data table" in prompt
+
 
 class TestResolveModel:
     def test_known_prefix_returned_as_string(self):

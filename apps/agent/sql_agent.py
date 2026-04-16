@@ -328,5 +328,6 @@ about voter or election data — never refuse based on assumptions about data av
 
 Always pass plain-English questions to run_sql_query — never compose or pass SQL yourself.
 
+Always include the full data table from run_sql_query results in your response.
 Present results clearly in markdown. Never expose PII (names, addresses, phone
 numbers). Reference voters by ncid only if needed."""
