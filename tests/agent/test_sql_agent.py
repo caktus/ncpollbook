@@ -152,6 +152,10 @@ class TestVoterSystemPrompt:
         prompt = _voter_system_prompt()
         assert "dataset is current" in prompt.lower()
 
+    def test_always_include_full_data_table(self):
+        prompt = _voter_system_prompt()
+        assert "full data table" in prompt
+
 
 class TestResolveModel:
     def test_known_prefix_returned_as_string(self):
@@ -236,6 +240,19 @@ class TestValidateSqlRollback:
             async_to_sync(_validate_sql)(ctx, result)
 
         conn.rollback.assert_awaited_once()
+
+    def test_logs_warning_on_invalid_query(self):
+        conn = AsyncMock()
+        conn.execute.side_effect = psycopg.Error("syntax error")
+        ctx = MagicMock()
+        ctx.deps.conn = conn
+        result = Success(sql_query="SELECT 1")
+
+        with patch("apps.agent.sql_agent.logger") as mock_logger, pytest.raises(ModelRetry):
+            async_to_sync(_validate_sql)(ctx, result)
+
+        mock_logger.warning.assert_called_once()
+        assert "invalid query" in mock_logger.warning.call_args[0][0]
 
 
 class TestRunSqlQueryToolErrorHandling:

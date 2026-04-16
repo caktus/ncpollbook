@@ -160,30 +160,25 @@ LOGGING = {
     "disable_existing_loggers": False,
     "handlers": {
         "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "class": "rich.logging.RichHandler",
+            "formatter": "rich",
+            "rich_tracebacks": True,
+            "tracebacks_show_locals": True,
         },
     },
     "formatters": {
-        "simple": {
-            "format": "%(levelname)s %(name)s %(message)s",
-        },
+        "rich": {"datefmt": "[%X]", "format": "%(message)s"},
     },
-    "root": {
-        "handlers": ["console"],
-        "level": "WARNING",
-    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
     "loggers": {
-        "apps": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
+        "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        # Set AGENT_API_LOG_LEVEL=DEBUG to see per-event streaming logs.
         "apps.agent.api": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": os.getenv("AGENT_API_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
+        "apps.agent.sql_agent": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
     },
 }
 
