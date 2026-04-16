@@ -138,6 +138,11 @@ class TestSqlGenSystemPrompt:
         assert "never return InvalidRequest" in prompt.lower() or "never" in prompt.lower()
         assert "dataset is current" in prompt.lower()
 
+    def test_ncid_is_not_pii(self):
+        prompt = asyncio.run(_sql_system_prompt())
+        assert "ncid" in prompt.lower()
+        assert "not pii" in prompt.lower()
+
 
 class TestVoterSystemPrompt:
     def test_includes_todays_date(self):
@@ -155,6 +160,21 @@ class TestVoterSystemPrompt:
     def test_always_include_full_data_table(self):
         prompt = _voter_system_prompt()
         assert "full data table" in prompt
+
+    def test_requires_run_sql_query_for_every_count(self):
+        prompt = _voter_system_prompt()
+        assert "CRITICAL RULE" in prompt
+        assert "EVERY count" in prompt or "every count" in prompt.lower()
+
+    def test_forbids_numbers_from_conversation_history(self):
+        prompt = _voter_system_prompt()
+        assert "conversation" in prompt.lower()
+        assert "never calculate" in prompt.lower() or "never" in prompt.lower()
+
+    def test_ncid_queries_are_allowed(self):
+        prompt = _voter_system_prompt()
+        assert "ncid" in prompt.lower()
+        assert "not pii" in prompt.lower()
 
 
 class TestResolveModel:
