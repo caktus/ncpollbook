@@ -159,6 +159,7 @@ async def _sse_stream(
     question: str, model: str, history: list[ModelMessage]
 ) -> AsyncGenerator[bytes]:
     """Async generator yielding SSE chunks for real token streaming."""
+    logger.debug("sse_stream start prompt=%r history_len=%d", question[:80], len(history))
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
 
@@ -177,6 +178,7 @@ async def _sse_stream(
     async for event in agent.run_stream_events(
         question, model=model, message_history=history or None
     ):
+        logger.debug("sse_stream event=%s", type(event).__name__)
         if isinstance(event, AgentRunResultEvent):
             break
         if (
@@ -201,8 +203,13 @@ _auth: _BearerAuth | None = _BearerAuth() if settings.AGENT_API_KEY else None
 async def chat_completions(request, body: ChatCompletionRequest):
     """POST /v1/chat/completions — OpenAI-compatible chat completions."""
 
-    logger.debug("chat_completions messages: %s", body.messages)
     user_prompt, history = _parse_messages(body.messages)
+    logger.info(
+        "chat_completions prompt=%r stream=%s title=%s",
+        user_prompt[:80],
+        body.stream,
+        _is_title_request(user_prompt),
+    )
     if not user_prompt:
         return api.create_response(request, {"detail": "No user message found"}, status=400)
 

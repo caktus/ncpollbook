@@ -231,3 +231,24 @@ class TestChatCompletions:
         with patch("apps.agent.api.connection.cursor", side_effect=OperationalError("db down")):
             resp = client.get("/ready")
         assert resp.status_code == 503
+
+
+class TestChatCompletionsLogging:
+    @pytest.mark.django_db
+    def test_logs_prompt_info(self):
+        mock_result = MagicMock()
+        mock_result.output = "42 active voters"
+        client = Client()
+        with (
+            patch("apps.agent.api.voter_agent.run", AsyncMock(return_value=mock_result)),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+            patch("apps.agent.api.logger") as mock_logger,
+        ):
+            client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": _MESSAGES}),
+                content_type="application/json",
+            )
+        mock_logger.info.assert_called_once()
+        logged_msg = mock_logger.info.call_args[0][0]
+        assert "chat_completions" in logged_msg

@@ -237,6 +237,19 @@ class TestValidateSqlRollback:
 
         conn.rollback.assert_awaited_once()
 
+    def test_logs_warning_on_invalid_query(self):
+        conn = AsyncMock()
+        conn.execute.side_effect = psycopg.Error("syntax error")
+        ctx = MagicMock()
+        ctx.deps.conn = conn
+        result = Success(sql_query="SELECT 1")
+
+        with patch("apps.agent.sql_agent.logger") as mock_logger, pytest.raises(ModelRetry):
+            async_to_sync(_validate_sql)(ctx, result)
+
+        mock_logger.warning.assert_called_once()
+        assert "invalid query" in mock_logger.warning.call_args[0][0]
+
 
 class TestRunSqlQueryToolErrorHandling:
     def test_returns_error_string_on_exception(self):

@@ -184,6 +184,7 @@ async def get_tool_model(tool_name: str | None) -> str | OpenAIChatModel:
             or ToolModel.objects.filter(tool_name=None).select_related("model").first()
         )
         if record:
+            logger.debug("get_tool_model tool=%r -> %r", tool_name, record.model.name)
             return resolve_model(record.model.name)
         raise ValueError(
             f"No ToolModel configured for tool '{tool_name}' and no default (tool_name=NULL) found. "
@@ -216,6 +217,7 @@ async def _validate_sql(ctx: RunContext[SqlDeps], result: Response) -> Response:
         await ctx.deps.conn.execute(f"EXPLAIN {result.sql_query}")
     except psycopg.Error as e:
         await ctx.deps.conn.rollback()
+        logger.warning("sql_validate invalid query, retrying: %s", e)
         raise ModelRetry(f"Invalid query: {e}") from e
     return result
 
@@ -227,6 +229,7 @@ async def _validate_sql(ctx: RunContext[SqlDeps], result: Response) -> Response:
 
 async def _run_sql_query(question: str) -> str:
     """Generate and execute a SQL query. Returns results as a markdown table."""
+    logger.info("run_sql_query question=%r", question)
     async with await psycopg.AsyncConnection.connect(**_get_async_conninfo()) as conn:
         deps = SqlDeps(conn=conn)
         result = await sql_gen_agent.run(
@@ -240,6 +243,7 @@ async def _run_sql_query(question: str) -> str:
         async with conn.cursor() as cur:
             await cur.execute(sql)
             rows = await cur.fetchall()
+            logger.debug("run_sql_query rows=%d", len(rows))
             table = _rows_to_markdown(cur.description, rows)
         parts = [f"```sql\n{sql}\n```"]
         if explanation:
