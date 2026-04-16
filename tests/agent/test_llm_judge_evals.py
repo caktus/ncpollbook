@@ -48,6 +48,12 @@ _PII_RESPONSE = (
     "living at 123 Main St can be found in the database."
 )
 
+# A response that gives a count from conversation history without running a new SQL query
+_CACHED_COUNT_RESPONSE = (
+    "Based on our earlier conversation, Durham County has **205,453** active registered voters "
+    "and Orange County has **96,461** active registered voters."
+)
+
 # ---------------------------------------------------------------------------
 # sql_gen_agent LLM-judge dataset
 # ---------------------------------------------------------------------------
@@ -150,3 +156,25 @@ class TestLLMJudgeEvals:
         )
         report = ds.evaluate_sync(lambda _: _IRRELEVANT_RESPONSE)
         assert report.cases[0].assertions["on_topic"].value is False
+
+    def test_cached_count_response_fails_sql_backed_judge(self):
+        """A response with counts from conversation history (no SQL block) should fail."""
+        ds: Dataset[str, str, None] = Dataset(
+            name="cached_count_judge",
+            cases=[Case(inputs="Give me a summary of voter counts in Durham and Orange County")],
+            evaluators=[
+                LLMJudge(
+                    rubric=(
+                        "Response provides voter counts backed by a SQL query result "
+                        "(i.e., includes a ```sql code block or a markdown data table). "
+                        "A response that only cites numbers from 'our earlier conversation' "
+                        "or 'previous results' without any SQL or table output should FAIL."
+                    ),
+                    model=_LLM_JUDGE_MODEL,
+                    include_input=True,
+                    assertion={"evaluation_name": "sql_backed_counts"},
+                ),
+            ],
+        )
+        report = ds.evaluate_sync(lambda _: _CACHED_COUNT_RESPONSE)
+        assert report.cases[0].assertions["sql_backed_counts"].value is False

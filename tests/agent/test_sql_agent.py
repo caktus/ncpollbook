@@ -156,6 +156,16 @@ class TestVoterSystemPrompt:
         prompt = _voter_system_prompt()
         assert "full data table" in prompt
 
+    def test_requires_run_sql_query_for_every_count(self):
+        prompt = _voter_system_prompt()
+        assert "CRITICAL RULE" in prompt
+        assert "EVERY count" in prompt or "every count" in prompt.lower()
+
+    def test_forbids_numbers_from_conversation_history(self):
+        prompt = _voter_system_prompt()
+        assert "conversation" in prompt.lower()
+        assert "never calculate" in prompt.lower() or "never" in prompt.lower()
+
 
 class TestResolveModel:
     def test_known_prefix_returned_as_string(self):
