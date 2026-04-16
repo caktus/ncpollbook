@@ -13,11 +13,13 @@ from pydantic_ai.models.openai import OpenAIChatModel
 
 from apps.agent.models import AgentTool, ModelIdentifier, ToolModel
 from apps.agent.sql_agent import (
+    InvalidRequest,
     Success,
     _is_safe_select_query,
     _sql_system_prompt,
     _validate_sql,
     _voter_system_prompt,
+    generate_csv_export,
     get_tool_model,
     get_view_schema,
     resolve_model,
@@ -289,3 +291,59 @@ class TestRunSqlQueryToolErrorHandling:
         ):
             result = async_to_sync(run_sql_query)("how many voters?")
         assert result.startswith("Error running query:")
+
+
+class TestGenerateCsvExport:
+    def _make_mock_result(self, output):
+        result = MagicMock()
+        result.output = output
+        return result
+
+    def test_returns_artifact_block_on_success(self):
+        col = MagicMock()
+        col.name = "ncid"
+        mock_cur = AsyncMock()
+        mock_cur.description = [col]
+        mock_cur.fetchall = AsyncMock(return_value=[("ABC123",)])
+        mock_cur.__aenter__ = AsyncMock(return_value=mock_cur)
+        mock_cur.__aexit__ = AsyncMock(return_value=None)
+        mock_conn = AsyncMock()
+        mock_conn.cursor = MagicMock(return_value=mock_cur)
+        mock_conn.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_conn.__aexit__ = AsyncMock(return_value=None)
+
+        success = Success(sql_query="SELECT ncid FROM voter_view LIMIT 1")
+        with (
+            patch("apps.agent.sql_agent.psycopg.AsyncConnection.connect", return_value=mock_conn),
+            patch(
+                "apps.agent.sql_agent.sql_gen_agent.run",
+                AsyncMock(return_value=self._make_mock_result(success)),
+            ),
+            patch("apps.agent.sql_agent.get_tool_model", AsyncMock(return_value="openai:gpt-4o")),
+        ):
+            result = async_to_sync(generate_csv_export)("export active voters")
+
+        assert result.startswith(":::artifact{")
+        assert 'type="text/csv"' in result
+        assert "ncid" in result
+        assert "ABC123" in result
+        assert result.endswith(":::")
+
+    def test_returns_error_on_invalid_request(self):
+        mock_conn = AsyncMock()
+        mock_conn.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_conn.__aexit__ = AsyncMock(return_value=None)
+
+        invalid = InvalidRequest(error_message="cannot understand question")
+        with (
+            patch("apps.agent.sql_agent.psycopg.AsyncConnection.connect", return_value=mock_conn),
+            patch(
+                "apps.agent.sql_agent.sql_gen_agent.run",
+                AsyncMock(return_value=self._make_mock_result(invalid)),
+            ),
+            patch("apps.agent.sql_agent.get_tool_model", AsyncMock(return_value="openai:gpt-4o")),
+        ):
+            result = async_to_sync(generate_csv_export)("??")
+
+        assert result.startswith("Could not generate export:")
+        assert "cannot understand question" in result

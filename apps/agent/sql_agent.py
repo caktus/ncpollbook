@@ -6,7 +6,10 @@ Two tools are registered on voter_agent:
   as a safe external function so the LLM can chain multiple queries programmatically
 """
 
+import csv
+import io
 import logging
+import uuid
 from dataclasses import dataclass
 from datetime import date
 
@@ -280,6 +283,36 @@ async def run_sql_query(question: str) -> str:
 """
 
 
+@voter_toolset.tool_plain
+async def generate_csv_export(question: str) -> str:
+    """Execute a query and return the data as a downloadable CSV file.
+    Use this only when the user specifically asks for a "CSV", "download", or "export".
+    """
+    logger.info("generate_csv_export question=%r", question)
+    async with await psycopg.AsyncConnection.connect(**_get_async_conninfo()) as conn:
+        deps = SqlDeps(conn=conn)
+        result = await sql_gen_agent.run(
+            question, deps=deps, model=await get_tool_model(AgentTool.SQL_GEN)
+        )
+        if isinstance(result.output, InvalidRequest):
+            return f"Could not generate export: {result.output.error_message}"
+        sql = result.output.sql_query
+        async with conn.cursor() as cur:
+            await cur.execute(sql)
+            rows = await cur.fetchall()
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow([d.name for d in cur.description])
+            writer.writerows(rows)
+            csv_content = output.getvalue()
+    artifact_id = f"csv-{uuid.uuid4().hex[:8]}"
+    return (
+        f':::artifact{{title="voter_data_export.csv" type="text/csv" identifier="{artifact_id}"}}\n'
+        f"{csv_content}\n"
+        f":::"
+    )
+
+
 # @voter_toolset.tool_plain
 async def run_python_code(code: str) -> str:
     """Execute Python code written to analyse voter data.
@@ -331,6 +364,7 @@ The dataset is current up to today. Always use run_sql_query for any question
 about voter or election data — never refuse based on assumptions about data availability.
 
 Always pass plain-English questions to run_sql_query — never compose or pass SQL yourself.
+Use generate_csv_export only when the user explicitly asks for a CSV, download, or export.
 
 CRITICAL RULE: You MUST call run_sql_query for EVERY count, total, or quantifiable figure
 you provide — even if a previous message in this conversation already contains that number.
