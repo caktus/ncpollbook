@@ -24,10 +24,31 @@ from django.http import StreamingHttpResponse
 from ninja import NinjaAPI, Schema
 from ninja.security import HttpBearer
 from pydantic import ConfigDict, field_validator
-from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, TextPart, UserPromptPart
+from pydantic_ai import Agent
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    PartDeltaEvent,
+    PartStartEvent,
+    TextPart,
+    TextPartDelta,
+    UserPromptPart,
+)
+from pydantic_ai.run import AgentRunResultEvent
 
 from apps.agent.models import AgentTool
 from apps.agent.sql_agent import get_tool_model, voter_agent
+
+# LibreChat sends a title-generation message through the same endpoint.
+# Route these to a tool-less agent so the voter agent never tries to run queries.
+_TITLE_REQUEST_PREFIX = "Provide a concise, 5-word-or-less title"
+_title_agent: Agent[None, str] = Agent()
+
+
+def _is_title_request(prompt: str) -> bool:
+    return prompt.startswith(_TITLE_REQUEST_PREFIX)
+
 
 _MODEL_ID = "voter-agent"
 
@@ -72,6 +93,7 @@ class ChatCompletionRequest(Schema):
     )
 
     messages: list[Message]
+    stream: bool = False
 
 
 # --- Helpers ---
@@ -112,6 +134,27 @@ def _parse_messages(messages: list[Message]) -> tuple[str, list[ModelMessage]]:
     return user_prompt, history
 
 
+async def _complete_non_streaming(question: str, model: str, history: list[ModelMessage]) -> dict:
+    """Run agent without streaming; return an OpenAI chat.completion JSON response."""
+    completion_id = f"chatcmpl-{uuid.uuid4().hex}"
+    agent = _title_agent if _is_title_request(question) else voter_agent
+    result = await agent.run(question, model=model, message_history=history or None)
+    return {
+        "id": completion_id,
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": _MODEL_ID,
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": str(result.output)},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+    }
+
+
 async def _sse_stream(
     question: str, model: str, history: list[ModelMessage]
 ) -> AsyncGenerator[bytes]:
@@ -129,12 +172,21 @@ async def _sse_stream(
         }
         return f"data: {json.dumps(data)}\n\n".encode()
 
+    agent = _title_agent if _is_title_request(question) else voter_agent
     yield _chunk({"role": "assistant", "content": ""}, None)
-    async with voter_agent.run_stream(
+    async for event in agent.run_stream_events(
         question, model=model, message_history=history or None
-    ) as result:
-        async for delta in result.stream_text(delta=True):
-            yield _chunk({"content": delta}, None)
+    ):
+        if isinstance(event, AgentRunResultEvent):
+            break
+        if (
+            isinstance(event, PartStartEvent)
+            and isinstance(event.part, TextPart)
+            and event.part.has_content()
+        ):
+            yield _chunk({"content": event.part.content}, None)
+        elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
+            yield _chunk({"content": event.delta.content_delta}, None)
     yield _chunk({}, "stop")
     yield b"data: [DONE]\n\n"
 
@@ -147,7 +199,7 @@ _auth: _BearerAuth | None = _BearerAuth() if settings.AGENT_API_KEY else None
 
 @api.post("/v1/chat/completions", auth=_auth)
 async def chat_completions(request, body: ChatCompletionRequest):
-    """POST /v1/chat/completions — OpenAI-compatible chat completions (streaming only)."""
+    """POST /v1/chat/completions — OpenAI-compatible chat completions."""
 
     logger.debug("chat_completions messages: %s", body.messages)
     user_prompt, history = _parse_messages(body.messages)
@@ -155,6 +207,8 @@ async def chat_completions(request, body: ChatCompletionRequest):
         return api.create_response(request, {"detail": "No user message found"}, status=400)
 
     model = await get_tool_model(AgentTool.VOTER_AGENT)
+    if not body.stream:
+        return await _complete_non_streaming(user_prompt, model, history)
     return StreamingHttpResponse(
         _sse_stream(user_prompt, model, history), content_type="text/event-stream"
     )

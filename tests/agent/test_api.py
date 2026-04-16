@@ -6,9 +6,17 @@ import pytest
 from django.db import OperationalError
 from django.test import Client
 from ninja.testing import TestClient
-from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
+from pydantic_ai.messages import (
+    ModelRequest,
+    ModelResponse,
+    PartDeltaEvent,
+    PartStartEvent,
+    TextPart,
+    TextPartDelta,
+    UserPromptPart,
+)
 
-from apps.agent.api import Message, _parse_messages, api
+from apps.agent.api import Message, _is_title_request, _parse_messages, api
 
 _MESSAGES = [{"role": "user", "content": "how many active voters are there?"}]
 
@@ -53,28 +61,32 @@ class TestParseMessages:
         assert history == []
 
 
+class TestIsTitleRequest:
+    def test_title_request_detected(self):
+        prompt = "Provide a concise, 5-word-or-less title for the conversation, using title case conventions. Only return the title itself."
+        assert _is_title_request(prompt) is True
+
+    def test_voter_question_not_title_request(self):
+        assert _is_title_request("How many active voters are in Durham County?") is False
+
+    def test_empty_string(self):
+        assert _is_title_request("") is False
+
+
 class TestChatCompletions:
     @pytest.mark.django_db
     def test_streams_event_stream(self):
-        mock_result = MagicMock()
-
-        async def fake_deltas():
-            yield "Hello"
-
-        mock_result.stream_text = MagicMock(return_value=fake_deltas())
-
-        mock_run_stream_cm = MagicMock()
-        mock_run_stream_cm.__aenter__ = AsyncMock(return_value=mock_result)
-        mock_run_stream_cm.__aexit__ = AsyncMock(return_value=False)
+        async def fake_events():
+            yield PartDeltaEvent(index=0, delta=TextPartDelta(content_delta="Hello"))
 
         client = Client()
         with (
-            patch("apps.agent.api.voter_agent.run_stream", return_value=mock_run_stream_cm),
+            patch("apps.agent.api.voter_agent.run_stream_events", return_value=fake_events()),
             patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
         ):
             resp = client.post(
                 "/v1/chat/completions",
-                data=json.dumps({"messages": _MESSAGES}),
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
                 content_type="application/json",
             )
 
@@ -88,6 +100,101 @@ class TestChatCompletions:
 
         assert "Hello" in body
         assert "[DONE]" in body
+
+    @pytest.mark.django_db
+    def test_part_start_event_content_is_streamed(self):
+        """PartStartEvent initial TextPart content must not be dropped."""
+
+        async def fake_events():
+            yield PartStartEvent(index=0, part=TextPart(content="The "))
+            yield PartDeltaEvent(index=0, delta=TextPartDelta(content_delta="counties"))
+
+        client = Client()
+        with (
+            patch("apps.agent.api.voter_agent.run_stream_events", return_value=fake_events()),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
+                content_type="application/json",
+            )
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            body = b"".join(asyncio.run(collect())).decode()
+
+        assert "The " in body
+        assert "counties" in body
+        assert "[DONE]" in body
+
+    @pytest.mark.django_db
+    def test_title_request_uses_title_agent(self):
+        """Title generation requests must use _title_agent (no tools), not voter_agent."""
+
+        async def fake_events():
+            yield PartDeltaEvent(
+                index=0, delta=TextPartDelta(content_delta="Counties Pre-1900 Voters")
+            )
+
+        title_messages = [
+            {
+                "role": "user",
+                "content": "Provide a concise, 5-word-or-less title for the conversation, using title case conventions. Only return the title itself.\n\nConversation:\nUser: Which counties have voters born before 1900?\nAI: I'll query the data.",
+            }
+        ]
+        client = Client()
+        with (
+            patch(
+                "apps.agent.api._title_agent.run_stream_events", return_value=fake_events()
+            ) as mock_title,
+            patch("apps.agent.api.voter_agent.run_stream_events") as mock_voter,
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": title_messages, "stream": True}),
+                content_type="application/json",
+            )
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            b"".join(asyncio.run(collect()))
+
+        mock_title.assert_called_once()
+        mock_voter.assert_not_called()
+
+    @pytest.mark.django_db
+    def test_non_streaming_title_returns_json_completion(self):
+        """Non-streaming title request returns chat.completion JSON with message format."""
+        title_messages = [
+            {
+                "role": "user",
+                "content": "Provide a concise, 5-word-or-less title for the conversation, using title case conventions. Only return the title itself.\n\nConversation:\nUser: q\nAI: r",
+            }
+        ]
+        mock_result = MagicMock()
+        mock_result.output = "Pre-1900 County Voters"
+        client = Client()
+        with (
+            patch("apps.agent.api._title_agent.run", AsyncMock(return_value=mock_result)),
+            patch("apps.agent.api.voter_agent.run") as mock_voter,
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": title_messages}),
+                content_type="application/json",
+            )
+
+        assert resp.status_code == 200
+        assert "application/json" in resp.get("content-type", "")
+        data = json.loads(resp.content)
+        assert data["object"] == "chat.completion"
+        assert data["choices"][0]["message"]["content"] == "Pre-1900 County Voters"
+        mock_voter.assert_not_called()
 
     @pytest.mark.django_db
     def test_missing_user_message_returns_400(self):
