@@ -284,19 +284,31 @@ async def run_sql_query(question: str) -> str:
 
 
 @voter_toolset.tool_plain
-async def generate_csv_export(question: str) -> str:
+async def generate_csv_export(question: str, sql: str = "") -> str:
     """Execute a query and return the data as a downloadable CSV file.
     Use this only when the user specifically asks for a "CSV", "download", or "export".
+    If run_sql_query was already called in this conversation, pass its generated SQL
+    as the `sql` argument to export exactly the same data.
     """
-    logger.info("generate_csv_export question=%r", question)
+    logger.info("generate_csv_export question=%r sql_provided=%s", question, bool(sql))
     async with await psycopg.AsyncConnection.connect(**_get_async_conninfo()) as conn:
-        deps = SqlDeps(conn=conn)
-        result = await sql_gen_agent.run(
-            question, deps=deps, model=await get_tool_model(AgentTool.SQL_GEN)
-        )
-        if isinstance(result.output, InvalidRequest):
-            return f"Could not generate export: {result.output.error_message}"
-        sql = result.output.sql_query
+        if sql:
+            sql = sql.replace("\\", "")
+            if not _is_safe_select_query(sql):
+                return "Could not generate export: provided SQL is not a safe SELECT query"
+            try:
+                await conn.execute(f"EXPLAIN {sql}")
+            except psycopg.Error as e:
+                await conn.rollback()
+                return f"Could not generate export: invalid SQL — {e}"
+        else:
+            deps = SqlDeps(conn=conn)
+            result = await sql_gen_agent.run(
+                question, deps=deps, model=await get_tool_model(AgentTool.SQL_GEN)
+            )
+            if isinstance(result.output, InvalidRequest):
+                return f"Could not generate export: {result.output.error_message}"
+            sql = result.output.sql_query
         async with conn.cursor() as cur:
             await cur.execute(sql)
             rows = await cur.fetchall()
@@ -364,7 +376,11 @@ The dataset is current up to today. Always use run_sql_query for any question
 about voter or election data — never refuse based on assumptions about data availability.
 
 Always pass plain-English questions to run_sql_query — never compose or pass SQL yourself.
+Always include the ```sql...``` block from run_sql_query results verbatim in your response so
+it is preserved in conversation history for future reference.
 Use generate_csv_export only when the user explicitly asks for a CSV, download, or export.
+When calling generate_csv_export after run_sql_query, always pass the SQL from the
+run_sql_query result as the `sql` argument so the export matches the displayed data.
 
 CRITICAL RULE: You MUST call run_sql_query for EVERY count, total, or quantifiable figure
 you provide — even if a previous message in this conversation already contains that number.
@@ -382,6 +398,6 @@ The user cannot see tool output — only you can. Always format and show the ful
 data table. Never say "the user is satisfied" or skip presenting results after a
 tool call.
 
-Always include the full data table from run_sql_query results in your response.
+Always include at least a truncated data table from run_sql_query results in your response.
 Present results clearly in markdown. Never expose PII (names, addresses, phone
 numbers)."""

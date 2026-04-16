@@ -161,7 +161,7 @@ class TestVoterSystemPrompt:
 
     def test_always_include_full_data_table(self):
         prompt = _voter_system_prompt()
-        assert "full data table" in prompt
+        assert "a truncated data table" in prompt
 
     def test_requires_run_sql_query_for_every_count(self):
         prompt = _voter_system_prompt()
@@ -182,6 +182,14 @@ class TestVoterSystemPrompt:
         prompt = _voter_system_prompt()
         assert "user cannot see tool output" in prompt.lower()
         assert "must present" in prompt.lower() or "you must present" in prompt.lower()
+
+    def test_instructs_to_pass_sql_to_csv_export(self):
+        prompt = _voter_system_prompt()
+        assert "sql" in prompt.lower() and "generate_csv_export" in prompt
+
+    def test_instructs_to_include_sql_block_in_response(self):
+        prompt = _voter_system_prompt()
+        assert "```sql" in prompt and "verbatim" in prompt
 
 
 class TestResolveModel:
@@ -347,3 +355,42 @@ class TestGenerateCsvExport:
 
         assert result.startswith("Could not generate export:")
         assert "cannot understand question" in result
+
+    def test_uses_provided_sql_directly(self):
+        """When sql is passed, sql_gen_agent is skipped and the SQL is executed directly."""
+        col = MagicMock()
+        col.name = "county_name"
+        mock_cur = AsyncMock()
+        mock_cur.description = [col]
+        mock_cur.fetchall = AsyncMock(return_value=[("DURHAM",)])
+        mock_cur.__aenter__ = AsyncMock(return_value=mock_cur)
+        mock_cur.__aexit__ = AsyncMock(return_value=None)
+        mock_conn = AsyncMock()
+        mock_conn.execute = AsyncMock()
+        mock_conn.cursor = MagicMock(return_value=mock_cur)
+        mock_conn.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_conn.__aexit__ = AsyncMock(return_value=None)
+
+        provided_sql = "SELECT county_name FROM voter_view LIMIT 1"
+        mock_sql_gen = AsyncMock()
+        with (
+            patch("apps.agent.sql_agent.psycopg.AsyncConnection.connect", return_value=mock_conn),
+            patch("apps.agent.sql_agent.sql_gen_agent.run", mock_sql_gen),
+        ):
+            result = async_to_sync(generate_csv_export)("export voters", sql=provided_sql)
+
+        mock_sql_gen.assert_not_called()
+        assert "county_name" in result
+        assert "DURHAM" in result
+        assert result.startswith(":::artifact{")
+
+    def test_rejects_unsafe_sql(self):
+        """Provided SQL containing write statements is rejected without hitting the DB."""
+        mock_conn = AsyncMock()
+        mock_conn.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_conn.__aexit__ = AsyncMock(return_value=None)
+
+        with patch("apps.agent.sql_agent.psycopg.AsyncConnection.connect", return_value=mock_conn):
+            result = async_to_sync(generate_csv_export)("export", sql="DELETE FROM voter_view")
+
+        assert "not a safe SELECT query" in result
