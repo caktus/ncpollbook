@@ -4,6 +4,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import cache_page
 
+from apps.agent.models import ToolModel
 from apps.ncsbe.constants import (
     COUNTY_ID_MAP,
     EthnicCode,
@@ -18,7 +19,6 @@ from apps.ncsbe.models import VoterEventView, VoterView
 CACHE_TTL = 60 * 60  # 1 hour
 
 
-@cache_page(CACHE_TTL)
 def home(request: HttpRequest) -> HttpResponse:
     counties = sorted(COUNTY_ID_MAP.keys())
     if request.method == "GET" and "county_name" in request.GET:
@@ -29,6 +29,11 @@ def home(request: HttpRequest) -> HttpResponse:
         form = CountyForm()
     voter_count = VoterView.objects.count()
     event_count = VoterEventView.objects.count()
+    tool_models = list(
+        ToolModel.objects.filter(tool_name__isnull=False)
+        .select_related("model")
+        .order_by("tool_name")
+    )
     return render(
         request,
         "ncsbe/home.html",
@@ -38,6 +43,7 @@ def home(request: HttpRequest) -> HttpResponse:
             "voter_count": voter_count,
             "event_count": event_count,
             "chatbot_url": getattr(settings, "CHATBOT_URL", ""),
+            "tool_models": tool_models,
         },
     )
 

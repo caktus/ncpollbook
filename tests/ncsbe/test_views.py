@@ -1,5 +1,6 @@
 import pytest
 
+from apps.agent.models import ModelIdentifier, ToolModel
 from apps.ncsbe.forms import CountyForm, VoterHistoryForm
 from apps.ncsbe.models import VoterEventView, VoterView
 from tests.ncsbe.factories import VoterEventFactory, VoterFactory
@@ -53,6 +54,19 @@ class TestHomeView:
         settings.CHATBOT_URL = "https://chat.example.com"
         response = client.get("/")
         assert response.context["chatbot_url"] == "https://chat.example.com"
+
+    def test_tool_models_in_context(self, client):
+        model = ModelIdentifier.objects.create(name="test:model-1", deployment_type="cloud-api")
+        ToolModel.objects.create(tool_name="voter_agent", model=model)
+        response = client.get("/")
+        assert len(response.context["tool_models"]) == 1
+        assert response.context["tool_models"][0].model.name == "test:model-1"
+
+    def test_default_tool_model_excluded_from_context(self, client):
+        model = ModelIdentifier.objects.create(name="test:default", deployment_type="cloud-api")
+        ToolModel.objects.create(tool_name=None, model=model)
+        response = client.get("/")
+        assert len(response.context["tool_models"]) == 0
 
 
 @pytest.mark.django_db
