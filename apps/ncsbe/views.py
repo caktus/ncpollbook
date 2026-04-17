@@ -34,33 +34,75 @@ def county_registrations(request: HttpRequest, county_name: str) -> HttpResponse
     qs = VoterView.objects.filter(county_name=county_name)
     stats = qs.aggregate(
         total=Count("ncid", filter=Q(registration_status_code="A")),
-        # Gender
-        female=Count("ncid", filter=Q(gender_sex_code=GenderCode.FEMALE)),
-        male=Count("ncid", filter=Q(gender_sex_code=GenderCode.MALE)),
-        gender_u=Count("ncid", filter=Q(gender_sex_code=GenderCode.UNDESIGNATED)),
-        # Party
-        dem=Count("ncid", filter=Q(registered_party_code=PartyCode.DEMOCRATIC)),
-        rep=Count("ncid", filter=Q(registered_party_code=PartyCode.REPUBLICAN)),
-        una=Count("ncid", filter=Q(registered_party_code=PartyCode.UNAFFILIATED)),
-        lib=Count("ncid", filter=Q(registered_party_code=PartyCode.LIBERTARIAN)),
-        gre=Count("ncid", filter=Q(registered_party_code=PartyCode.GREEN)),
-        cst=Count("ncid", filter=Q(registered_party_code=PartyCode.CONSTITUTION)),
-        nlb=Count("ncid", filter=Q(registered_party_code=PartyCode.NO_LABELS)),
-        jfa=Count("ncid", filter=Q(registered_party_code=PartyCode.JUSTICE_FOR_ALL)),
-        wtp=Count("ncid", filter=Q(registered_party_code=PartyCode.WE_THE_PEOPLE)),
-        # Race (Pacific Islander omitted per spec)
-        white=Count("ncid", filter=Q(race_code=RaceCode.WHITE)),
-        black=Count("ncid", filter=Q(race_code=RaceCode.BLACK)),
-        asian=Count("ncid", filter=Q(race_code=RaceCode.ASIAN)),
-        american_indian=Count("ncid", filter=Q(race_code=RaceCode.AMERICAN_INDIAN)),
-        two_or_more=Count("ncid", filter=Q(race_code=RaceCode.TWO_OR_MORE)),
-        other_race=Count("ncid", filter=Q(race_code=RaceCode.OTHER)),
-        race_u=Count("ncid", filter=Q(race_code=RaceCode.UNDESIGNATED)),
-        # Ethnicity
-        hispanic=Count("ncid", filter=Q(ethnicity_code=EthnicCode.HISPANIC)),
-        not_hispanic=Count("ncid", filter=Q(ethnicity_code=EthnicCode.NOT_HISPANIC)),
-        ethnicity_u=Count("ncid", filter=Q(ethnicity_code=EthnicCode.UNDESIGNATED)),
-        # Status
+        # Gender (active only)
+        female=Count(
+            "ncid", filter=Q(registration_status_code="A", gender_sex_code=GenderCode.FEMALE)
+        ),
+        male=Count("ncid", filter=Q(registration_status_code="A", gender_sex_code=GenderCode.MALE)),
+        gender_u=Count(
+            "ncid", filter=Q(registration_status_code="A", gender_sex_code=GenderCode.UNDESIGNATED)
+        ),
+        # Party (active only)
+        dem=Count(
+            "ncid",
+            filter=Q(registration_status_code="A", registered_party_code=PartyCode.DEMOCRATIC),
+        ),
+        rep=Count(
+            "ncid",
+            filter=Q(registration_status_code="A", registered_party_code=PartyCode.REPUBLICAN),
+        ),
+        una=Count(
+            "ncid",
+            filter=Q(registration_status_code="A", registered_party_code=PartyCode.UNAFFILIATED),
+        ),
+        lib=Count(
+            "ncid",
+            filter=Q(registration_status_code="A", registered_party_code=PartyCode.LIBERTARIAN),
+        ),
+        gre=Count(
+            "ncid", filter=Q(registration_status_code="A", registered_party_code=PartyCode.GREEN)
+        ),
+        cst=Count(
+            "ncid",
+            filter=Q(registration_status_code="A", registered_party_code=PartyCode.CONSTITUTION),
+        ),
+        nlb=Count(
+            "ncid",
+            filter=Q(registration_status_code="A", registered_party_code=PartyCode.NO_LABELS),
+        ),
+        jfa=Count(
+            "ncid",
+            filter=Q(registration_status_code="A", registered_party_code=PartyCode.JUSTICE_FOR_ALL),
+        ),
+        wtp=Count(
+            "ncid",
+            filter=Q(registration_status_code="A", registered_party_code=PartyCode.WE_THE_PEOPLE),
+        ),
+        # Race — active only; Pacific Islander omitted per spec
+        white=Count("ncid", filter=Q(registration_status_code="A", race_code=RaceCode.WHITE)),
+        black=Count("ncid", filter=Q(registration_status_code="A", race_code=RaceCode.BLACK)),
+        asian=Count("ncid", filter=Q(registration_status_code="A", race_code=RaceCode.ASIAN)),
+        american_indian=Count(
+            "ncid", filter=Q(registration_status_code="A", race_code=RaceCode.AMERICAN_INDIAN)
+        ),
+        two_or_more=Count(
+            "ncid", filter=Q(registration_status_code="A", race_code=RaceCode.TWO_OR_MORE)
+        ),
+        other_race=Count("ncid", filter=Q(registration_status_code="A", race_code=RaceCode.OTHER)),
+        race_u=Count(
+            "ncid", filter=Q(registration_status_code="A", race_code=RaceCode.UNDESIGNATED)
+        ),
+        # Ethnicity (active only)
+        hispanic=Count(
+            "ncid", filter=Q(registration_status_code="A", ethnicity_code=EthnicCode.HISPANIC)
+        ),
+        not_hispanic=Count(
+            "ncid", filter=Q(registration_status_code="A", ethnicity_code=EthnicCode.NOT_HISPANIC)
+        ),
+        ethnicity_u=Count(
+            "ncid", filter=Q(registration_status_code="A", ethnicity_code=EthnicCode.UNDESIGNATED)
+        ),
+        # Status (all statuses — no active filter)
         active=Count("ncid", filter=Q(registration_status_code=StatusCode.ACTIVE)),
         denied=Count("ncid", filter=Q(registration_status_code=StatusCode.DENIED)),
         inactive=Count("ncid", filter=Q(registration_status_code=StatusCode.INACTIVE)),

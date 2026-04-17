@@ -1,4 +1,5 @@
 {% extends "ncsbe/base.html" %}
+{% load humanize %}
 
 {% block title %}{{ county_name|title }} County — Registrations{% endblock %}
 
@@ -11,48 +12,48 @@
 <div class="overflow-x-auto mb-10">
   <table class="table table-zebra w-full max-w-lg">
     <thead>
-      <tr><th>Metric</th><th>Count</th></tr>
+      <tr><th>Metric</th><th class="text-right">Count</th></tr>
     </thead>
     <tbody>
       <tr><th colspan="2" class="font-bold bg-base-300">Total Active Registered Voters</th></tr>
-      <tr><td>Active registered voters</td><td>{{ stats.total }}</td></tr>
+      <tr><td>Active registered voters</td><td class="text-right">{{ stats.total|intcomma }}</td></tr>
 
       <tr><th colspan="2" class="font-bold bg-base-300">Gender</th></tr>
-      <tr><td>Female</td><td>{{ stats.female }}</td></tr>
-      <tr><td>Male</td><td>{{ stats.male }}</td></tr>
-      <tr><td>Undesignated</td><td>{{ stats.gender_u }}</td></tr>
+      <tr><td>Female</td><td class="text-right">{{ stats.female|intcomma }}</td></tr>
+      <tr><td>Male</td><td class="text-right">{{ stats.male|intcomma }}</td></tr>
+      <tr><td>Undesignated</td><td class="text-right">{{ stats.gender_u|intcomma }}</td></tr>
 
       <tr><th colspan="2" class="font-bold bg-base-300">Party</th></tr>
-      <tr><td>Democratic</td><td>{{ stats.dem }}</td></tr>
-      <tr><td>Republican</td><td>{{ stats.rep }}</td></tr>
-      <tr><td>Unaffiliated</td><td>{{ stats.una }}</td></tr>
-      <tr><td>Libertarian</td><td>{{ stats.lib }}</td></tr>
-      <tr><td>Green</td><td>{{ stats.gre }}</td></tr>
-      <tr><td>Constitution</td><td>{{ stats.cst }}</td></tr>
-      <tr><td>No Labels</td><td>{{ stats.nlb }}</td></tr>
-      <tr><td>Justice For All</td><td>{{ stats.jfa }}</td></tr>
-      <tr><td>We The People</td><td>{{ stats.wtp }}</td></tr>
+      <tr><td>Democratic</td><td class="text-right">{{ stats.dem|intcomma }}</td></tr>
+      <tr><td>Republican</td><td class="text-right">{{ stats.rep|intcomma }}</td></tr>
+      <tr><td>Unaffiliated</td><td class="text-right">{{ stats.una|intcomma }}</td></tr>
+      <tr><td>Libertarian</td><td class="text-right">{{ stats.lib|intcomma }}</td></tr>
+      <tr><td>Green</td><td class="text-right">{{ stats.gre|intcomma }}</td></tr>
+      <tr><td>Constitution</td><td class="text-right">{{ stats.cst|intcomma }}</td></tr>
+      <tr><td>No Labels</td><td class="text-right">{{ stats.nlb|intcomma }}</td></tr>
+      <tr><td>Justice For All</td><td class="text-right">{{ stats.jfa|intcomma }}</td></tr>
+      <tr><td>We The People</td><td class="text-right">{{ stats.wtp|intcomma }}</td></tr>
 
       <tr><th colspan="2" class="font-bold bg-base-300">Race</th></tr>
-      <tr><td>White</td><td>{{ stats.white }}</td></tr>
-      <tr><td>Black or African American</td><td>{{ stats.black }}</td></tr>
-      <tr><td>Asian</td><td>{{ stats.asian }}</td></tr>
-      <tr><td>American Indian or Alaska Native</td><td>{{ stats.american_indian }}</td></tr>
-      <tr><td>Two or More Races</td><td>{{ stats.two_or_more }}</td></tr>
-      <tr><td>Other</td><td>{{ stats.other_race }}</td></tr>
-      <tr><td>Undesignated</td><td>{{ stats.race_u }}</td></tr>
+      <tr><td>White</td><td class="text-right">{{ stats.white|intcomma }}</td></tr>
+      <tr><td>Black or African American</td><td class="text-right">{{ stats.black|intcomma }}</td></tr>
+      <tr><td>Asian</td><td class="text-right">{{ stats.asian|intcomma }}</td></tr>
+      <tr><td>American Indian or Alaska Native</td><td class="text-right">{{ stats.american_indian|intcomma }}</td></tr>
+      <tr><td>Two or More Races</td><td class="text-right">{{ stats.two_or_more|intcomma }}</td></tr>
+      <tr><td>Other</td><td class="text-right">{{ stats.other_race|intcomma }}</td></tr>
+      <tr><td>Undesignated</td><td class="text-right">{{ stats.race_u|intcomma }}</td></tr>
 
       <tr><th colspan="2" class="font-bold bg-base-300">Ethnicity</th></tr>
-      <tr><td>Hispanic or Latino</td><td>{{ stats.hispanic }}</td></tr>
-      <tr><td>Not Hispanic or Not Latino</td><td>{{ stats.not_hispanic }}</td></tr>
-      <tr><td>Undesignated</td><td>{{ stats.ethnicity_u }}</td></tr>
+      <tr><td>Hispanic or Latino</td><td class="text-right">{{ stats.hispanic|intcomma }}</td></tr>
+      <tr><td>Not Hispanic or Not Latino</td><td class="text-right">{{ stats.not_hispanic|intcomma }}</td></tr>
+      <tr><td>Undesignated</td><td class="text-right">{{ stats.ethnicity_u|intcomma }}</td></tr>
 
       <tr><th colspan="2" class="font-bold bg-base-300">Registration Status</th></tr>
-      <tr><td>Active</td><td>{{ stats.active }}</td></tr>
-      <tr><td>Denied</td><td>{{ stats.denied }}</td></tr>
-      <tr><td>Inactive</td><td>{{ stats.inactive }}</td></tr>
-      <tr><td>Removed</td><td>{{ stats.removed }}</td></tr>
-      <tr><td>Temporary</td><td>{{ stats.temporary }}</td></tr>
+      <tr><td>Active</td><td class="text-right">{{ stats.active|intcomma }}</td></tr>
+      <tr><td>Denied</td><td class="text-right">{{ stats.denied|intcomma }}</td></tr>
+      <tr><td>Inactive</td><td class="text-right">{{ stats.inactive|intcomma }}</td></tr>
+      <tr><td>Removed</td><td class="text-right">{{ stats.removed|intcomma }}</td></tr>
+      <tr><td>Temporary</td><td class="text-right">{{ stats.temporary|intcomma }}</td></tr>
     </tbody>
   </table>
 </div>

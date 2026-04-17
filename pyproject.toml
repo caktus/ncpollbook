@@ -36,6 +36,7 @@ deploy = [
     "kubernetes>=35.0.0",
 ]
 dev = [
+    "django-debug-toolbar>=6.3.0",
     "factory-boy>=3.3.3",
     "pre-commit>=4.5.1",
     "pydantic-evals>=1.70.0",

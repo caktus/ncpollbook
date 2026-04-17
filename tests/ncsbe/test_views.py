@@ -59,7 +59,7 @@ class TestCountyRegistrationsView:
         assert response.status_code == 200
         stats = response.context["stats"]
         assert stats["total"] == 2  # only active
-        assert stats["female"] == 2
+        assert stats["female"] == 1  # inactive voter excluded from gender breakdown
         assert stats["male"] == 1
 
     def test_sample_voters_shown(self, client):
