@@ -403,7 +403,7 @@ env_anthropic_api_key: !vault |
 
 k8s_ncpollbook_release_values:
   image:
-    tag: sha-f0a504e
+    tag: sha-454b131
   environmentVariables:
     DJANGO_SECRET_KEY: "{{ env_ncpollbook_secret_key }}"
     AGENT_API_KEY: "{{ env_ncpollbook_agent_api_key }}"
@@ -413,6 +413,8 @@ k8s_ncpollbook_release_values:
     AWS_DEFAULT_REGION: 'us-east-2'
     LM_STUDIO_BASE_URL: "http://framework1:1234/v1"
     CSRF_TRUSTED_ORIGINS: "https://{{ k8s_ncpollbook_hostname }}"
+    CHATBOT_URL: "https://{{ k8s_librechat_hostname }}"
+    DEBUG: "False"
   ingress:
     enabled: true
     className: traefik
