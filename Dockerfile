@@ -4,6 +4,7 @@ FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS python-builder
 
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
+ARG UV_OPTS="--no-dev --no-group deploy"
 ENV VIRTUAL_ENV=/venv
 
 WORKDIR /code/
@@ -14,7 +15,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     && BUILD_DEPS="build-essential libpq-dev" \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     && uv venv $VIRTUAL_ENV \
-    && uv sync --active --locked --no-install-project --no-dev \
+    && uv sync --active --locked --no-install-project $UV_OPTS \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
 
