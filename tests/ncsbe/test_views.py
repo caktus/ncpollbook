@@ -82,10 +82,19 @@ class TestCountyRegistrationsView:
 
 @pytest.mark.django_db
 class TestVoterHistoryView:
-    def test_unknown_ncid_returns_404(self, client):
+    def test_unknown_ncid_returns_200_with_empty_events(self, client):
         VoterEventView.refresh()
         response = client.get("/voter/XXXXXXXX/")
-        assert response.status_code == 404
+        assert response.status_code == 200
+        assert response.context["events"] == []
+
+    def test_no_events_returns_200_with_empty_list(self, client):
+        VoterFactory(ncid="AA000001")
+        VoterView.refresh()
+        VoterEventView.refresh()
+        response = client.get("/voter/AA000001/")
+        assert response.status_code == 200
+        assert response.context["events"] == []
 
     def test_voter_history_returns_200(self, client):
         event = VoterEventFactory(ncid="AA000099")
@@ -101,3 +110,11 @@ class TestVoterHistoryView:
         response = client.get("/voter/BB000001/")
         events = list(response.context["events"])
         assert events[0].election_date > events[1].election_date
+
+    def test_demographics_in_context(self, client):
+        VoterFactory(ncid="CC000001", county_desc="WAKE")
+        VoterView.refresh()
+        VoterEventView.refresh()
+        response = client.get("/voter/CC000001/")
+        assert response.status_code == 200
+        assert response.context["voter"].county_name == "WAKE"
