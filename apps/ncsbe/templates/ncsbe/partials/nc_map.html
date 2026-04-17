@@ -641,13 +641,27 @@
 <script>
   document.querySelectorAll('[id^="NC_"]').forEach(function(el) {
     var county = el.id.replace('NC_', '').replace(/_/g, ' ').toUpperCase();
-    var url = '/county/' + county + '/';
+    el.setAttribute('data-county', county);
     el.style.cursor = 'pointer';
-    el.setAttribute('data-tip', county);
-    el.classList.add('tooltip');
-    var title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-    title.textContent = county;
-    el.insertBefore(title, el.firstChild);
-    el.addEventListener('click', function() { window.location.href = url; });
+    el.addEventListener('click', function() { window.location.href = '/county/' + county + '/'; });
+  });
+
+  var tip = document.createElement('div');
+  tip.id = 'map-tooltip';
+  tip.style.cssText = 'position:fixed;pointer-events:none;background:rgba(0,0,0,.75);color:#fff;padding:3px 8px;border-radius:4px;font-size:12px;display:none;z-index:100';
+  document.body.appendChild(tip);
+
+  document.querySelectorAll('[data-county]').forEach(function(el) {
+    el.addEventListener('mouseenter', function(e) {
+      tip.textContent = el.getAttribute('data-county');
+      tip.style.display = 'block';
+    });
+    el.addEventListener('mousemove', function(e) {
+      tip.style.left = (e.clientX + 12) + 'px';
+      tip.style.top  = (e.clientY + 12) + 'px';
+    });
+    el.addEventListener('mouseleave', function() {
+      tip.style.display = 'none';
+    });
   });
 </script>

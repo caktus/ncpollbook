@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.db import models
 from django_pgviews import view as pg
 
@@ -371,6 +373,9 @@ class VoterView(pg.MaterializedView):
 
     class Meta:
         managed = False
+        indexes: ClassVar[list[models.Index]] = [
+            models.Index(fields=["county_name"], name="voter_view_county_name_idx"),
+        ]
 
     def __str__(self) -> str:
         return str(self.ncid)
@@ -440,6 +445,9 @@ class VoterEventView(pg.MaterializedView):
 
     class Meta:
         managed = False
+        indexes: ClassVar[list[models.Index]] = [
+            models.Index(fields=["ncid"], name="voter_event_view_ncid_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.ncid} — {self.election_date}"

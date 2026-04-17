@@ -131,8 +131,8 @@ def voter_history(request: HttpRequest, ncid: str) -> HttpResponse:
         raise Http404("Invalid voter ID.")
     ncid = form.cleaned_data["ncid"]
 
-    events = VoterEventView.objects.filter(ncid=ncid).order_by("-election_date")
-    if not events.exists():
+    events = list(VoterEventView.objects.filter(ncid=ncid).order_by("-election_date"))
+    if not events:
         raise Http404("No voting history found for this voter.")
 
     return render(request, "ncsbe/voter_history.html", {"ncid": ncid, "events": events})
