@@ -234,7 +234,7 @@ COUNTY_ID_MAP: dict[str, str] = {
     "MONTGOMERY": "62",
     "MOORE": "63",
     "NASH": "64",
-    "NEWHANOVER": "65",
+    "NEW HANOVER": "65",
     "NORTHAMPTON": "66",
     "ONSLOW": "67",
     "ORANGE": "68",

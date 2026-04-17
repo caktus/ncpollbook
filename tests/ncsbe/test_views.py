@@ -18,6 +18,17 @@ class TestCountyForm:
         assert not form.is_valid()
         assert "county_name" in form.errors
 
+    def test_new_hanover_with_space_is_valid(self):
+        # Map click generates "NEW HANOVER"; COUNTY_ID_MAP must accept it.
+        form = CountyForm({"county_name": "NEW HANOVER"})
+        assert form.is_valid()
+        assert form.cleaned_data["county_name"] == "NEW HANOVER"
+
+    def test_newhanover_no_space_is_invalid(self):
+        # Old key "NEWHANOVER" no longer exists; map/DB use "NEW HANOVER".
+        form = CountyForm({"county_name": "NEWHANOVER"})
+        assert not form.is_valid()
+
 
 class TestVoterHistoryForm:
     def test_clean_ncid_strips_and_uppercases(self):
