@@ -30,6 +30,7 @@ SECRET_KEY = os.environ.get(
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True") == "True"
+ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
@@ -198,3 +199,22 @@ EXPORT_DIR = BASE_DIR / "exports"
 
 # Directory where downloaded NCSBE data files are cached
 SCRATCH_DIR = Path(os.getenv("SCRATCH_DIR", "/tmp/ncsbe-data"))
+
+# SENTRY
+# ------------------------------------------------------------------------------
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+SENTRY_SEND_DEFAULT_PII = os.getenv("SENTRY_SEND_DEFAULT_PII", "True") == "True"
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        environment=ENVIRONMENT,
+        release=os.getenv("CONTAINER_IMAGE_TAG"),
+        # % of captured performance monitoring transactions
+        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", 0)),
+        # Attach user to error events
+        send_default_pii=SENTRY_SEND_DEFAULT_PII,
+    )
