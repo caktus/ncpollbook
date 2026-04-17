@@ -60,7 +60,7 @@ EXPOSE 8000
 
 ENV DJANGO_SETTINGS_MODULE=config.settings
 
-RUN DATABASE_URL='' DJANGO_SECRET_KEY='dummy' python manage.py collectstatic --noinput -c
+RUN DATABASE_URL='' DJANGO_SECRET_KEY='dummy' DEBUG=False python manage.py collectstatic --noinput -c
 
 USER ${APP_USER}:${APP_USER}
 
