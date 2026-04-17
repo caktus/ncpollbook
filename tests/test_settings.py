@@ -18,3 +18,16 @@ class TestCsrfTrustedOrigins:
         monkeypatch.setenv("CSRF_TRUSTED_ORIGINS", "https://example.com,https://other.com")
         result = [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
         assert result == ["https://example.com", "https://other.com"]
+
+
+class TestSentrySettings:
+    def test_dsn_not_set_by_default(self):
+        assert settings.SENTRY_DSN is None
+
+    def test_send_default_pii_true_by_default(self):
+        assert settings.SENTRY_SEND_DEFAULT_PII is True
+
+    def test_send_default_pii_env_false(self, monkeypatch):
+        monkeypatch.setenv("SENTRY_SEND_DEFAULT_PII", "False")
+        result = os.getenv("SENTRY_SEND_DEFAULT_PII", "True") == "True"
+        assert result is False

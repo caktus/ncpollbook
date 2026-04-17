@@ -55,6 +55,7 @@ environmentVariables: {}
   # DATABASE_URL: "postgres://user:pass@host/db"
   # DJANGO_SECRET_KEY: "changeme"
   # AGENT_API_KEY: "changeme"
+  # CHATBOT_URL: "https://chat.example.com"
 
 # Reference additional existing Secrets/ConfigMaps as env sources.
 envFrom: []

@@ -371,6 +371,7 @@ class VoterView(pg.MaterializedView):
 
     class Meta:
         managed = False
+        indexes = [models.Index(fields=["county_name"])]  # noqa: RUF012
 
     def __str__(self) -> str:
         return str(self.ncid)
@@ -440,6 +441,7 @@ class VoterEventView(pg.MaterializedView):
 
     class Meta:
         managed = False
+        indexes = [models.Index(fields=["ncid"])]  # noqa: RUF012
 
     def __str__(self) -> str:
         return f"{self.ncid} — {self.election_date}"
