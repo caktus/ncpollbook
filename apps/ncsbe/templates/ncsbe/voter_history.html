@@ -1,0 +1,35 @@
+{% extends "ncsbe/base.html" %}
+
+{% block title %}Voter History — {{ ncid }}{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center gap-4">
+  <a href="/" class="btn btn-ghost btn-sm">← Back</a>
+  <h1 class="text-3xl font-bold">Voter History: {{ ncid }}</h1>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="table table-zebra w-full max-w-4xl">
+    <thead>
+      <tr>
+        <th>Election Date</th>
+        <th>Year</th>
+        <th>Type</th>
+        <th>Voting Method</th>
+        <th>Voted Party</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+      <tr>
+        <td>{{ event.election_date }}</td>
+        <td>{{ event.election_year }}</td>
+        <td>{{ event.election_type }}</td>
+        <td>{{ event.voting_method }}</td>
+        <td>{{ event.voted_party_name }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
