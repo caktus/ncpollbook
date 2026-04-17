@@ -1,4 +1,5 @@
 import pytest
+from django.core.cache import cache
 
 from apps.agent.models import ModelIdentifier, ToolModel
 from apps.ncsbe.forms import CountyForm, VoterHistoryForm
@@ -49,6 +50,13 @@ class TestHomeView:
         response = client.get("/")
         assert "voter_count" in response.context
         assert "event_count" in response.context
+
+    def test_summary_counts_are_cached(self, client, settings):
+        settings.CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+        cache.clear()
+        client.get("/")
+        assert cache.get("home_voter_count") is not None
+        assert cache.get("home_event_count") is not None
 
     def test_chatbot_url_in_context(self, client, settings):
         settings.CHATBOT_URL = "https://chat.example.com"

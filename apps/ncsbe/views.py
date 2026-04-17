@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.cache import cache
 from django.db.models import Count, Q
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
@@ -27,8 +28,8 @@ def home(request: HttpRequest) -> HttpResponse:
             return redirect("county_registrations", county_name=form.cleaned_data["county_name"])
     else:
         form = CountyForm()
-    voter_count = VoterView.objects.count()
-    event_count = VoterEventView.objects.count()
+    voter_count = cache.get_or_set("home_voter_count", VoterView.objects.count, CACHE_TTL)
+    event_count = cache.get_or_set("home_event_count", VoterEventView.objects.count, CACHE_TTL)
     tool_models = list(
         ToolModel.objects.filter(tool_name__isnull=False)
         .select_related("model")

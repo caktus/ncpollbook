@@ -1,5 +1,5 @@
 {% extends "ncsbe/base.html" %}
-{% load humanize cache %}
+{% load humanize %}
 
 {% block title %}NC Poll Book — Home{% endblock %}
 
@@ -10,7 +10,7 @@
       <h1 class="text-4xl font-bold mb-2">NC Voter Registration Data</h1>
       <p class="text-base-content/70 mb-4">Explore North Carolina's publicly available voter registration data. Search by county to see active registration counts broken down by gender, party, race, and ethnicity, or look up an individual voter's election history by NCID.</p>
       {% if chatbot_url %}
-      <a href="{{ chatbot_url }}" class="btn btn-secondary gap-2" target="_blank" rel="noopener">
+      <a href="{{ chatbot_url }}" class="btn btn-primary gap-2" target="_blank" rel="noopener">
         <svg class="h-5 w-5" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
           <defs>
             <linearGradient id="lc-g1"><stop stop-color="#21facf" offset="0"/><stop stop-color="#0970ef" offset="1"/></linearGradient>
@@ -36,30 +36,28 @@
 </div>
 
 <div class="flex justify-center mb-8">
-  {% cache 3600 "home_counts" %}
   <div class="stats shadow bg-base-200">
     <div class="stat">
-      <div class="stat-figure text-primary">
+      <div class="stat-figure text-secondary">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block h-8 w-8 stroke-current">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
       </div>
       <div class="stat-title"><a href="https://www.ncsbe.gov/results-data/voter-registration-data" class="link" target="_blank" rel="noopener">Voter Registration Records</a></div>
-      <div class="stat-value text-primary">{{ voter_count|intcomma }}</div>
+      <div class="stat-value text-secondary">{{ voter_count|intcomma }}</div>
       <div class="stat-desc">Active + inactive</div>
     </div>
     <div class="stat">
-      <div class="stat-figure text-secondary">
+      <div class="stat-figure text-accent">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block h-8 w-8 stroke-current">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
       </div>
       <div class="stat-title"><a href="https://www.ncsbe.gov/results-data/voter-history-data" class="link" target="_blank" rel="noopener">Voter History Records</a></div>
-      <div class="stat-value text-secondary">{{ event_count|intcomma }}</div>
+      <div class="stat-value text-accent">{{ event_count|intcomma }}</div>
       <div class="stat-desc">All elections</div>
     </div>
   </div>
-  {% endcache %}
 </div>
 
 <div class="flex justify-center mb-8">
