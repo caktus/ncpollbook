@@ -44,6 +44,11 @@ class TestHomeView:
         assert "DURHAM" in response.context["counties"]
         assert "WAKE" in response.context["counties"]
 
+    def test_summary_counts_in_context(self, client):
+        response = client.get("/")
+        assert "voter_count" in response.context
+        assert "event_count" in response.context
+
 
 @pytest.mark.django_db
 class TestCountyRegistrationsView:

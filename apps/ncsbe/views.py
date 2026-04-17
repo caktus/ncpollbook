@@ -22,7 +22,18 @@ def home(request: HttpRequest) -> HttpResponse:
             return redirect("county_registrations", county_name=form.cleaned_data["county_name"])
     else:
         form = CountyForm()
-    return render(request, "ncsbe/home.html", {"form": form, "counties": counties})
+    voter_count = VoterView.objects.count()
+    event_count = VoterEventView.objects.count()
+    return render(
+        request,
+        "ncsbe/home.html",
+        {
+            "form": form,
+            "counties": counties,
+            "voter_count": voter_count,
+            "event_count": event_count,
+        },
+    )
 
 
 def county_registrations(request: HttpRequest, county_name: str) -> HttpResponse:

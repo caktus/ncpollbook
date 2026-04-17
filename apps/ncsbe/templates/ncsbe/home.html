@@ -1,4 +1,5 @@
 {% extends "ncsbe/base.html" %}
+{% load humanize cache %}
 
 {% block title %}NC Poll Book — Home{% endblock %}
 
@@ -12,6 +13,27 @@
     </div>
   </div>
 </div>
+
+{% cache 3600 "home_summary" %}
+<div class="flex gap-4 justify-center mb-8">
+  <div class="card bg-base-200 w-64">
+    <div class="card-body items-center text-center p-4">
+      <div class="text-3xl font-bold">{{ voter_count|intcomma }}</div>
+      <div class="text-sm text-base-content/70">
+        <a href="https://www.ncsbe.gov/results-data/voter-registration-data" class="link" target="_blank" rel="noopener">Voter Registrations</a>
+      </div>
+    </div>
+  </div>
+  <div class="card bg-base-200 w-64">
+    <div class="card-body items-center text-center p-4">
+      <div class="text-3xl font-bold">{{ event_count|intcomma }}</div>
+      <div class="text-sm text-base-content/70">
+        <a href="https://www.ncsbe.gov/results-data/voter-history-data" class="link" target="_blank" rel="noopener">Voter History Records</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endcache %}
 
 <div class="flex justify-center mb-8">
   <form method="get" action="/" class="flex gap-2">
@@ -36,5 +58,8 @@
 
 <div class="w-full max-w-4xl mx-auto">
   {% include "ncsbe/partials/nc_map.html" %}
+  <p class="text-xs text-base-content/40 text-right mt-1">
+    Map: <a href="https://commons.wikimedia.org/wiki/File:North_Carolina_counties_and_cities_with_domestic_partnerships.svg" class="link" target="_blank" rel="noopener">GayTenn</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/" class="link" target="_blank" rel="noopener">CC BY-SA 3.0</a>, via Wikimedia Commons
+  </p>
 </div>
 {% endblock %}
