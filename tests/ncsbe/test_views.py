@@ -69,13 +69,15 @@ class TestCountyRegistrationsView:
         VoterFactory(county_desc="DURHAM", status_cd="A", gender_code="F")
         VoterFactory(county_desc="DURHAM", status_cd="A", gender_code="M")
         VoterFactory(county_desc="DURHAM", status_cd="I", gender_code="F")
+        VoterFactory(county_desc="DURHAM", status_cd="A", race_code="P", gender_code="U")
         VoterView.refresh()
         response = client.get("/county/DURHAM/")
         assert response.status_code == 200
         stats = response.context["stats"]
-        assert stats["total"] == 2  # only active
+        assert stats["total"] == 3  # only active
         assert stats["female"] == 1  # inactive voter excluded from gender breakdown
         assert stats["male"] == 1
+        assert stats["pacific_islander"] == 1
 
     def test_sample_voters_up_to_25(self, client):
         for _ in range(30):

@@ -96,7 +96,7 @@ def county_registrations(request: HttpRequest, county_name: str) -> HttpResponse
             "ncid",
             filter=Q(registration_status_code="A", registered_party_code=PartyCode.WE_THE_PEOPLE),
         ),
-        # Race — active only; Pacific Islander omitted per spec
+        # Race — active only
         white=Count("ncid", filter=Q(registration_status_code="A", race_code=RaceCode.WHITE)),
         black=Count("ncid", filter=Q(registration_status_code="A", race_code=RaceCode.BLACK)),
         asian=Count("ncid", filter=Q(registration_status_code="A", race_code=RaceCode.ASIAN)),
@@ -105,6 +105,9 @@ def county_registrations(request: HttpRequest, county_name: str) -> HttpResponse
         ),
         two_or_more=Count(
             "ncid", filter=Q(registration_status_code="A", race_code=RaceCode.TWO_OR_MORE)
+        ),
+        pacific_islander=Count(
+            "ncid", filter=Q(registration_status_code="A", race_code=RaceCode.PACIFIC_ISLANDER)
         ),
         other_race=Count("ncid", filter=Q(registration_status_code="A", race_code=RaceCode.OTHER)),
         race_u=Count(
