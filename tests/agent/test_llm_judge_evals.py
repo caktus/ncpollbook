@@ -70,6 +70,20 @@ _NCID_GOOD_RESPONSE = (
     "| 2022-11-08 | GENERAL | IN-PERSON |\n"
 )
 
+# A bad response that skips presenting tool results and dismisses the user
+_SKIPPED_TOOL_RESULTS_RESPONSE = (
+    "The user is satisfied with the previous answer and has not asked a new question. "
+    "If you have any other questions about voter data, please let me know!"
+)
+
+# A good response that presents tool results as a table
+_PRESENTED_TOOL_RESULTS_RESPONSE = (
+    "Here is the voter in Durham County who has recorded the fewest elections:\n\n"
+    "| ncid | election_date | election_type | voting_method |\n"
+    "| --- | --- | --- | --- |\n"
+    "| BL606050 | 2026-03-03 | PRIMARY | ELECTION DAY IN-PERSON |\n"
+)
+
 # ---------------------------------------------------------------------------
 # sql_gen_agent LLM-judge dataset
 # ---------------------------------------------------------------------------
@@ -244,3 +258,45 @@ class TestLLMJudgeEvals:
         )
         report = ds.evaluate_sync(lambda _: _NCID_GOOD_RESPONSE)
         assert report.cases[0].assertions["ncid_query_answered"].value is True
+
+    def test_skipping_tool_results_fails_judge(self):
+        """A response that ignores tool output and dismisses the user should fail."""
+        ds: Dataset[str, str, None] = Dataset(
+            name="skipped_tool_results_judge",
+            cases=[Case(inputs="Show me the voter who has voted the least in Durham County")],
+            evaluators=[
+                LLMJudge(
+                    rubric=(
+                        "The response presents voter data (a table or SQL result) answering the "
+                        "question. A response that only says 'the user is satisfied' or invites "
+                        "follow-up questions without showing any data should FAIL."
+                    ),
+                    model=_LLM_JUDGE_MODEL,
+                    include_input=True,
+                    assertion={"evaluation_name": "tool_results_presented"},
+                ),
+            ],
+        )
+        report = ds.evaluate_sync(lambda _: _SKIPPED_TOOL_RESULTS_RESPONSE)
+        assert report.cases[0].assertions["tool_results_presented"].value is False
+
+    def test_presenting_tool_results_passes_judge(self):
+        """A response that shows a data table from the tool result should pass."""
+        ds: Dataset[str, str, None] = Dataset(
+            name="presented_tool_results_judge",
+            cases=[Case(inputs="Show me the voter who has voted the least in Durham County")],
+            evaluators=[
+                LLMJudge(
+                    rubric=(
+                        "The response presents voter data (a table or SQL result) answering the "
+                        "question. A response that only says 'the user is satisfied' or invites "
+                        "follow-up questions without showing any data should FAIL."
+                    ),
+                    model=_LLM_JUDGE_MODEL,
+                    include_input=True,
+                    assertion={"evaluation_name": "tool_results_presented"},
+                ),
+            ],
+        )
+        report = ds.evaluate_sync(lambda _: _PRESENTED_TOOL_RESULTS_RESPONSE)
+        assert report.cases[0].assertions["tool_results_presented"].value is True
