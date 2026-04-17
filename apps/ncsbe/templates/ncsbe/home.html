@@ -21,7 +21,12 @@
       placeholder="County name (e.g. DURHAM)"
       class="input input-bordered w-64"
       value="{{ form.county_name.value|default:'' }}"
+      list="counties"
+      autocomplete="off"
     />
+    <datalist id="counties">
+      {% for county in counties %}<option value="{{ county }}">{% endfor %}
+    </datalist>
     <button type="submit" class="btn btn-primary">Search</button>
     {% if form.errors %}
     <span class="text-error self-center text-sm">{{ form.county_name.errors.0 }}</span>

@@ -593,6 +593,8 @@
 
   document.querySelectorAll('[data-county]').forEach(function(el) {
     el.addEventListener('mouseenter', function(e) {
+      el._origFill = el.style.fill;
+      el.style.fill = '#ff79c6';
       tip.textContent = el.getAttribute('data-county');
       tip.style.display = 'block';
     });
@@ -601,6 +603,7 @@
       tip.style.top  = (e.clientY + 12) + 'px';
     });
     el.addEventListener('mouseleave', function() {
+      el.style.fill = el._origFill;
       tip.style.display = 'none';
     });
   });

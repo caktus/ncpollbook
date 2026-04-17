@@ -39,6 +39,11 @@ class TestHomeView:
         response = client.get("/?county_name=INVALID")
         assert response.status_code == 200
 
+    def test_counties_context_for_datalist(self, client):
+        response = client.get("/")
+        assert "DURHAM" in response.context["counties"]
+        assert "WAKE" in response.context["counties"]
+
 
 @pytest.mark.django_db
 class TestCountyRegistrationsView:
