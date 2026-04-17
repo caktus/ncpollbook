@@ -49,6 +49,11 @@ class TestHomeView:
         assert "voter_count" in response.context
         assert "event_count" in response.context
 
+    def test_chatbot_url_in_context(self, client, settings):
+        settings.CHATBOT_URL = "https://chat.example.com"
+        response = client.get("/")
+        assert response.context["chatbot_url"] == "https://chat.example.com"
+
 
 @pytest.mark.django_db
 class TestCountyRegistrationsView:
@@ -72,12 +77,13 @@ class TestCountyRegistrationsView:
         assert stats["female"] == 1  # inactive voter excluded from gender breakdown
         assert stats["male"] == 1
 
-    def test_sample_voters_shown(self, client):
-        VoterFactory(county_desc="DURHAM")
+    def test_sample_voters_up_to_25(self, client):
+        for _ in range(30):
+            VoterFactory(county_desc="DURHAM")
         VoterView.refresh()
         response = client.get("/county/DURHAM/")
         assert response.status_code == 200
-        assert len(response.context["sample_voters"]) == 1
+        assert len(response.context["sample_voters"]) == 25
 
 
 @pytest.mark.django_db

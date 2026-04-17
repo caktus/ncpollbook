@@ -70,7 +70,7 @@
   {# Right column: sample voters #}
   <div class="card bg-base-200">
     <div class="card-body p-4">
-      <h2 class="card-title text-lg mb-2">Sample Voters (first 10)</h2>
+      <h2 class="card-title text-lg mb-2">Sample Voters (first 25)</h2>
       <div class="overflow-x-auto">
         <table class="table table-xs table-zebra w-full">
           <thead>
@@ -84,7 +84,7 @@
           </thead>
           <tbody>
             {% for voter in sample_voters %}
-            <tr>
+            <tr class="hover:bg-base-300">
               <td><a href="/voter/{{ voter.ncid }}/" class="link link-primary">{{ voter.ncid }}</a></td>
               <td>{{ voter.gender_sex_code }}</td>
               <td>{{ voter.race_code }}</td>

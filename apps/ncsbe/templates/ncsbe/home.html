@@ -1,5 +1,5 @@
 {% extends "ncsbe/base.html" %}
-{% load humanize cache %}
+{% load humanize %}
 
 {% block title %}NC Poll Book — Home{% endblock %}
 
@@ -9,11 +9,13 @@
     <div class="max-w-xl">
       <h1 class="text-4xl font-bold mb-2">NC Voter Registration Data</h1>
       <p class="text-base-content/70 mb-2">Explore North Carolina's publicly available voter registration data. Search by county to see active registration counts broken down by gender, party, race, and ethnicity, or look up an individual voter's election history by NCID.</p>
+      {% if chatbot_url %}
+      <a href="{{ chatbot_url }}" class="btn btn-secondary mt-2" target="_blank" rel="noopener">Ask the Chatbot</a>
+      {% endif %}
     </div>
   </div>
 </div>
 
-{% cache 3600 "home_summary" %}
 <div class="flex gap-4 justify-center mb-8">
   <div class="card bg-base-200 w-64">
     <div class="card-body items-center text-center p-4">
@@ -32,7 +34,6 @@
     </div>
   </div>
 </div>
-{% endcache %}
 
 <div class="flex justify-center mb-8">
   <form method="get" action="/" class="flex gap-2">

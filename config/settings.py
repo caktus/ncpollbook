@@ -123,6 +123,9 @@ AGENT_API_KEY = os.environ.get("AGENT_API_KEY", "")
 # LM Studio local inference server base URL
 LM_STUDIO_BASE_URL = os.environ.get("LM_STUDIO_BASE_URL", "http://localhost:1234/v1")
 
+# LibreChat chatbot URL shown on the homepage (leave empty to hide button)
+CHATBOT_URL = os.environ.get("CHATBOT_URL", "http://localhost:3080/")
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

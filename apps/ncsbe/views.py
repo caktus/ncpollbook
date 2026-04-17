@@ -1,6 +1,8 @@
+from django.conf import settings
 from django.db.models import Count, Q
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.cache import cache_page
 
 from apps.ncsbe.constants import (
     COUNTY_ID_MAP,
@@ -13,7 +15,10 @@ from apps.ncsbe.constants import (
 from apps.ncsbe.forms import CountyForm, VoterHistoryForm
 from apps.ncsbe.models import VoterEventView, VoterView
 
+CACHE_TTL = 60 * 60  # 1 hour
 
+
+@cache_page(CACHE_TTL)
 def home(request: HttpRequest) -> HttpResponse:
     counties = sorted(COUNTY_ID_MAP.keys())
     if request.method == "GET" and "county_name" in request.GET:
@@ -32,10 +37,12 @@ def home(request: HttpRequest) -> HttpResponse:
             "counties": counties,
             "voter_count": voter_count,
             "event_count": event_count,
+            "chatbot_url": getattr(settings, "CHATBOT_URL", ""),
         },
     )
 
 
+@cache_page(CACHE_TTL)
 def county_registrations(request: HttpRequest, county_name: str) -> HttpResponse:
     form = CountyForm({"county_name": county_name})
     if not form.is_valid():
@@ -127,7 +134,7 @@ def county_registrations(request: HttpRequest, county_name: str) -> HttpResponse
         "race_code",
         "registered_party_code",
         "registration_status_code",
-    )[:10]
+    )[:25]
 
     return render(
         request,
@@ -136,6 +143,7 @@ def county_registrations(request: HttpRequest, county_name: str) -> HttpResponse
     )
 
 
+@cache_page(CACHE_TTL)
 def voter_history(request: HttpRequest, ncid: str) -> HttpResponse:
     form = VoterHistoryForm({"ncid": ncid})
     if not form.is_valid():
