@@ -227,3 +227,119 @@ class TestVoterAgentEvals:
         )
         report = ds.evaluate_sync(lambda _: "The voter last_name is Smith")
         assert report.cases[0].assertions["NoPiiInResponse"].value is False
+
+
+# ---------------------------------------------------------------------------
+# generate_csv_export evaluators
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class IsArtifactBlock(Evaluator):
+    """Assert the output is a LibreChat artifact block with type text/csv."""
+
+    def evaluate(self, ctx: EvaluatorContext) -> dict[str, bool]:
+        out = ctx.output
+        return {
+            "has_artifact_start": out.startswith(":::artifact{"),
+            "has_csv_type": 'type="text/csv"' in out,
+            "has_artifact_end": out.endswith(":::"),
+        }
+
+
+@dataclass
+class CsvHasHeader(Evaluator):
+    """Assert the CSV content inside the artifact block contains at least one header row."""
+
+    def evaluate(self, ctx: EvaluatorContext) -> bool:
+        out = ctx.output
+        # Content sits between the first newline and the closing :::
+        start = out.find("\n")
+        end = out.rfind("\n:::")
+        if start == -1 or end == -1:
+            return False
+        csv_content = out[start + 1 : end]
+        lines = [ln for ln in csv_content.splitlines() if ln.strip()]
+        return len(lines) >= 1
+
+
+# ---------------------------------------------------------------------------
+# generate_csv_export dataset
+# ---------------------------------------------------------------------------
+
+_CSV_ARTIFACT = (
+    ':::artifact{title="voter_data_export.csv" type="text/csv" identifier="csv-abc12345"}\n'
+    "ncid,county_name,registered_party_code\n"
+    "AA123,DURHAM,DEM\n"
+    ":::"
+)
+_CSV_ERROR = "Could not generate export: cannot understand question"
+
+
+csv_export_dataset: Dataset[str, str, None] = Dataset(
+    name="generate_csv_export",
+    cases=[
+        Case(
+            name="export_active_voters",
+            inputs="export active voters in Durham as CSV",
+            evaluators=[IsArtifactBlock(), CsvHasHeader()],
+        ),
+        Case(
+            name="download_party_breakdown",
+            inputs="download voter party breakdown",
+            evaluators=[IsArtifactBlock(), CsvHasHeader()],
+        ),
+    ],
+)
+
+
+def _simulated_csv_task(question: str) -> str:
+    """Simulate generate_csv_export responses for deterministic eval testing."""
+    q = question.lower()
+    if any(w in q for w in ("export", "download", "csv", "voter", "party")):
+        return _CSV_ARTIFACT
+    return _CSV_ERROR
+
+
+class TestCsvExportEvals:
+    def test_dataset_with_simulated_responses(self):
+        """Run the CSV export eval dataset against a simulated task."""
+        report = csv_export_dataset.evaluate_sync(_simulated_csv_task)
+        assert len(report.failures) == 0
+        for case in report.cases:
+            for name, result in case.assertions.items():
+                assert result.value, f"Assertion '{name}' failed for case '{case.name}'"
+
+    def test_is_artifact_block_evaluator_passes(self):
+        """IsArtifactBlock passes for a well-formed artifact response."""
+        ds: Dataset[str, str, None] = Dataset(
+            name="is_artifact_block_unit",
+            cases=[Case(inputs="q")],
+            evaluators=[IsArtifactBlock()],
+        )
+        report = ds.evaluate_sync(lambda _: _CSV_ARTIFACT)
+        case = report.cases[0]
+        assert case.assertions["has_artifact_start"].value is True
+        assert case.assertions["has_csv_type"].value is True
+        assert case.assertions["has_artifact_end"].value is True
+
+    def test_is_artifact_block_evaluator_fails_on_error(self):
+        """IsArtifactBlock fails for an error response."""
+        ds: Dataset[str, str, None] = Dataset(
+            name="is_artifact_block_fail_unit",
+            cases=[Case(inputs="q")],
+            evaluators=[IsArtifactBlock()],
+        )
+        report = ds.evaluate_sync(lambda _: _CSV_ERROR)
+        case = report.cases[0]
+        assert case.assertions["has_artifact_start"].value is False
+
+    def test_csv_has_header_evaluator(self):
+        """CsvHasHeader passes when CSV content has at least one line."""
+        ds: Dataset[str, str, None] = Dataset(
+            name="csv_has_header_unit",
+            cases=[Case(inputs="q")],
+            evaluators=[CsvHasHeader()],
+        )
+        report = ds.evaluate_sync(lambda _: _CSV_ARTIFACT)
+        assert report.cases[0].assertions["CsvHasHeader"].value is True

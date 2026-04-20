@@ -219,9 +219,12 @@ async def _sse_stream(
         elif isinstance(event, FunctionToolResultEvent) and isinstance(
             event.result, ToolReturnPart
         ):
-            sql = _extract_sql_block(event.result.model_response_str())
+            result_str = event.result.model_response_str()
+            sql = _extract_sql_block(result_str)
             if sql:
                 yield _chunk(ChoiceDelta(reasoning_content=f"\n{sql}\n"), None)
+            if result_str.startswith(":::artifact{"):
+                yield _chunk(ChoiceDelta(content=result_str), None)
     yield _chunk(ChoiceDelta(), "stop")
     yield b"data: [DONE]\n\n"
 
