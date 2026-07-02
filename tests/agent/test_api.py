@@ -488,3 +488,36 @@ class TestSqlInThinkingStream:
         assert any(
             "SELECT COUNT(*)" in r["choices"][0]["delta"]["reasoning_content"] for r in reasoning
         )
+
+    @pytest.mark.django_db
+    def test_tool_result_emits_artifact_as_content(self):
+        """FunctionToolResultEvent for generate_csv_export must emit the artifact as content."""
+        artifact = ':::artifact{title="voter_data_export.csv" type="text/csv" identifier="csv-abc123"}\nncid\nAA1\n:::'
+
+        async def fake_events():
+            result = MagicMock(spec=ToolReturnPart)
+            result.tool_name = "generate_csv_export"
+            result.model_response_str.return_value = artifact
+            yield FunctionToolResultEvent(result=result, event_kind="function_tool_result")
+
+        client = Client()
+        with (
+            patch("apps.agent.api.voter_agent.run_stream_events", return_value=fake_events()),
+            patch("apps.agent.api.get_tool_model", AsyncMock(return_value="openai:gpt-4o-mini")),
+        ):
+            resp = client.post(
+                "/v1/chat/completions",
+                data=json.dumps({"messages": _MESSAGES, "stream": True}),
+                content_type="application/json",
+            )
+
+            async def collect():
+                return [chunk async for chunk in resp.streaming_content]
+
+            body = b"".join(asyncio.run(collect())).decode()
+
+        data_lines = [
+            json.loads(line[6:]) for line in body.splitlines() if line.startswith("data: {")
+        ]
+        content_chunks = [c for c in data_lines if c["choices"][0]["delta"].get("content")]
+        assert any(":::artifact{" in c["choices"][0]["delta"]["content"] for c in content_chunks)
