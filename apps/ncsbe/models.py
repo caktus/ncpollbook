@@ -305,6 +305,8 @@ class VoterView(pg.MaterializedView):
             county_id::smallint                         AS county_identification_number,
             county_desc                                 AS county_name,
             municipality_desc                           AS municipality_jurisdiction_name,
+            precinct_abbrv,
+            precinct_desc,
 
             -- Voter identity (no PII)
             ncid,
@@ -335,6 +337,16 @@ class VoterView(pg.MaterializedView):
         db_comment="County name: ALAMANCE, ALEXANDER, ALLEGHANY, ANSON, ASHE, AVERY, BEAUFORT, BERTIE, BLADEN, BRUNSWICK, BUNCOMBE, BURKE, CABARRUS, CALDWELL, CAMDEN, CARTERET, CASWELL, CATAWBA, CHATHAM, CHEROKEE ... (100 distinct)",
     )
     municipality_jurisdiction_name = models.CharField(max_length=60, blank=True)
+    precinct_abbrv = models.CharField(
+        max_length=6,
+        blank=True,
+        db_comment="(empty), 0001, 0003, 0005, 001, 0011, 0012, 0013, 0014, 0015, 0016, 0017, 0018, 0019, 002, 0020, 0020A, 0020B, 0021, 0022 ... (1954 distinct)",
+    )
+    precinct_desc = models.CharField(
+        max_length=60,
+        blank=True,
+        db_comment="(empty), 0005, 001, 0019, 002, 0020A, 0020B, 003, 0030, 004, 0044, 0045, 006, 007, 008, 009, 01, 01-02, 01-04, 01-07 ... (2510 distinct)",
+    )
     ncid = models.CharField(
         max_length=12,
         primary_key=True,
@@ -371,7 +383,10 @@ class VoterView(pg.MaterializedView):
 
     class Meta:
         managed = False
-        indexes = [models.Index(fields=["county_name"])]  # noqa: RUF012
+        indexes = [  # noqa: RUF012
+            models.Index(fields=["county_name"]),
+            models.Index(fields=["county_name", "precinct_abbrv"]),
+        ]
 
     def __str__(self) -> str:
         return str(self.ncid)
@@ -405,7 +420,11 @@ class VoterEventView(pg.MaterializedView):
 
             -- Voting behaviour
             voting_method,
-            voted_party_desc                     AS voted_party_name
+            voted_party_desc                     AS voted_party_name,
+
+            -- Precinct at time of election
+            pct_label,
+            pct_description
 
         FROM ncsbe_voterevent
     """
@@ -437,6 +456,16 @@ class VoterEventView(pg.MaterializedView):
         max_length=60,
         blank=True,
         db_comment="(empty), CONSTITUTION, DEMOCRATIC, GREEN, JUSTICE FOR ALL, LIBERTARIAN, NO LABELS, REPUBLICAN, UNAFFILIATED, WE THE PEOPLE (10 distinct)",
+    )
+    pct_label = models.CharField(
+        max_length=6,
+        blank=True,
+        db_comment="0001, 0002, 0003, 0005, 0007, 0008, 001, 0010, 0011, 0012, 0013, 0014, 0015, 0016, 0017, 0018, 0019, 002, 0020, 0020A ... (2170 distinct)",
+    )
+    pct_description = models.CharField(
+        max_length=60,
+        blank=True,
+        db_comment="0005, 001, 0019, 002, 0020A, 0020B, 003, 0030, 004, 0044, 0045, 005, 006, 007, 008, 009, 01, 01-02, 01-04, 01-06 ... (2781 distinct)",
     )
 
     class Meta:

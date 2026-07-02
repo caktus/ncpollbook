@@ -155,6 +155,86 @@ SELECT DISTINCT county_name
 FROM ncsbe_voterview
 ORDER BY county_name;"""
 
+SQL_EXAMPLE_8 = """\
+-- 8. Precinct-Level Turnout for the 2024 General Election
+-- For each precinct in DURHAM county, compare registered active voters vs. actual votes cast.
+WITH registered AS (
+    SELECT
+        precinct_abbrv,
+        precinct_desc,
+        COUNT(*) AS registered_voters
+    FROM ncsbe_voterview
+    WHERE county_name = 'DURHAM'
+      AND registration_status_code = 'A'
+      AND precinct_desc <> ''
+    GROUP BY precinct_abbrv, precinct_desc
+),
+voted AS (
+    SELECT
+        pct_label,
+        pct_description,
+        COUNT(*) AS votes_cast
+    FROM ncsbe_votereventview
+    WHERE voted_county_desc = 'DURHAM'
+      AND election_date = '2024-11-05'
+      AND election_type = 'GENERAL'
+      AND voting_method NOT IN ('ELIGIBLE DID NOT VOTE', 'TRANSFER')
+    GROUP BY pct_label, pct_description
+)
+SELECT
+    r.precinct_desc,
+    r.precinct_abbrv,
+    r.registered_voters,
+    COALESCE(v.votes_cast, 0) AS votes_cast,
+    ROUND(COALESCE(v.votes_cast, 0)::numeric / NULLIF(r.registered_voters, 0) * 100, 1) AS turnout_pct
+FROM registered r
+LEFT JOIN voted v ON r.precinct_abbrv = v.pct_label
+ORDER BY turnout_pct DESC NULLS LAST;"""
+
+SQL_EXAMPLE_9 = """\
+-- 9. Race and Ethnicity Breakdown by Precinct in a County
+-- Active voter demographics for every precinct in WAKE county.
+SELECT
+    precinct_desc,
+    COUNT(*)                                                     AS active_voters,
+    COUNT(*) FILTER (WHERE race_code = 'W')                     AS white,
+    COUNT(*) FILTER (WHERE race_code = 'B')                     AS black,
+    COUNT(*) FILTER (WHERE race_code = 'A')                     AS asian,
+    COUNT(*) FILTER (WHERE race_code = 'I')                     AS american_indian,
+    COUNT(*) FILTER (WHERE race_code = 'M')                     AS multiracial,
+    COUNT(*) FILTER (WHERE race_code = 'O')                     AS other_race,
+    COUNT(*) FILTER (WHERE ethnicity_code = 'HL')               AS hispanic,
+    ROUND(COUNT(*) FILTER (WHERE race_code = 'B')::numeric      / COUNT(*) * 100, 1) AS pct_black,
+    ROUND(COUNT(*) FILTER (WHERE ethnicity_code = 'HL')::numeric / COUNT(*) * 100, 1) AS pct_hispanic
+FROM ncsbe_voterview
+WHERE county_name = 'WAKE'
+  AND registration_status_code = 'A'
+  AND precinct_desc <> ''
+GROUP BY precinct_desc
+ORDER BY active_voters DESC;"""
+
+SQL_EXAMPLE_10 = """\
+-- 10. Precincts with High Immigrant-Population Proxy (Asian + Hispanic voters)
+-- Ranks precincts in a county by the combined share of Asian and Hispanic/Latino
+-- registered voters — useful for targeted voter protection planning.
+SELECT
+    county_name,
+    precinct_desc,
+    COUNT(*)                                                      AS active_voters,
+    COUNT(*) FILTER (WHERE race_code = 'A')                      AS asian,
+    COUNT(*) FILTER (WHERE ethnicity_code = 'HL')                AS hispanic,
+    ROUND(
+        (COUNT(*) FILTER (WHERE race_code = 'A' OR ethnicity_code = 'HL'))::numeric
+        / COUNT(*) * 100, 1
+    )                                                             AS immigrant_proxy_pct
+FROM ncsbe_voterview
+WHERE registration_status_code = 'A'
+  AND precinct_desc <> ''
+  AND county_name = 'DURHAM'
+GROUP BY county_name, precinct_desc
+HAVING COUNT(*) > 100
+ORDER BY immigrant_proxy_pct DESC;"""
+
 SQL_EXAMPLES: list[str] = [
     SQL_EXAMPLE_1,
     SQL_EXAMPLE_2,
@@ -163,4 +243,7 @@ SQL_EXAMPLES: list[str] = [
     SQL_EXAMPLE_5,
     SQL_EXAMPLE_6,
     SQL_EXAMPLE_7,
+    SQL_EXAMPLE_8,
+    SQL_EXAMPLE_9,
+    SQL_EXAMPLE_10,
 ]

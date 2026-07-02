@@ -18,6 +18,7 @@
       <table class="table table-xs w-full">
         <tbody>
           <tr><th>County</th><td>{{ voter.county_name|title }}</td></tr>
+          <tr><th>Precinct</th><td>{{ voter.precinct_desc|default:"—" }}</td></tr>
           <tr><th>Gender</th><td>{{ voter.gender_sex_code }}</td></tr>
           <tr><th>Status</th><td>{{ voter.registration_status_code }}</td></tr>
           <tr><th>Party</th><td>{{ voter.registered_party_code }}</td></tr>
@@ -46,6 +47,7 @@
               <th>Type</th>
               <th>Voting Method</th>
               <th>Voted Party</th>
+              <th>Precinct</th>
             </tr>
           </thead>
           <tbody>
@@ -56,6 +58,7 @@
               <td>{{ event.election_type }}</td>
               <td>{{ event.voting_method }}</td>
               <td>{{ event.voted_party_name }}</td>
+              <td>{{ event.pct_description|default:"—" }}</td>
             </tr>
             {% endfor %}
           </tbody>

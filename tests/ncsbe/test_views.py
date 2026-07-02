@@ -120,6 +120,57 @@ class TestCountyRegistrationsView:
         assert response.status_code == 200
         assert len(response.context["sample_voters"]) == 25
 
+    def test_precinct_stats_in_context(self, client):
+        VoterFactory(
+            county_desc="DURHAM",
+            status_cd="A",
+            precinct_abbrv="01",
+            precinct_desc="PRECINCT 01",
+            race_code="B",
+            ethnic_code="NL",
+        )
+        VoterFactory(
+            county_desc="DURHAM",
+            status_cd="A",
+            precinct_abbrv="01",
+            precinct_desc="PRECINCT 01",
+            race_code="W",
+            ethnic_code="HL",
+        )
+        VoterFactory(
+            county_desc="DURHAM",
+            status_cd="A",
+            precinct_abbrv="02",
+            precinct_desc="PRECINCT 02",
+            race_code="A",
+            ethnic_code="NL",
+        )
+        VoterFactory(
+            county_desc="DURHAM", status_cd="I", precinct_abbrv="01", precinct_desc="PRECINCT 01"
+        )
+        VoterView.refresh()
+        response = client.get("/county/DURHAM/")
+        assert response.status_code == 200
+        precinct_stats = response.context["precinct_stats"]
+        assert len(precinct_stats) == 2
+        # sorted by active_voters descending
+        p1 = precinct_stats[0]
+        assert p1["precinct_desc"] == "PRECINCT 01"
+        assert p1["active_voters"] == 2
+        assert p1["pct_black"] == 50  # 1 of 2
+        assert p1["pct_white"] == 50  # 1 of 2
+        assert p1["pct_hispanic"] == 50  # 1 of 2 (HL ethnicity)
+        assert precinct_stats[1]["precinct_desc"] == "PRECINCT 02"
+        assert precinct_stats[1]["pct_asian"] == 100
+
+    def test_precinct_stats_excludes_inactive_voters(self, client):
+        VoterFactory(
+            county_desc="DURHAM", status_cd="I", precinct_abbrv="01", precinct_desc="PRECINCT 01"
+        )
+        VoterView.refresh()
+        response = client.get("/county/DURHAM/")
+        assert list(response.context["precinct_stats"]) == []
+
 
 @pytest.mark.django_db
 class TestVoterHistoryView:
@@ -153,9 +204,16 @@ class TestVoterHistoryView:
         assert events[0].election_date > events[1].election_date
 
     def test_demographics_in_context(self, client):
-        VoterFactory(ncid="CC000001", county_desc="WAKE")
+        VoterFactory(ncid="CC000001", county_desc="WAKE", precinct_desc="PRECINCT 05")
         VoterView.refresh()
         VoterEventView.refresh()
         response = client.get("/voter/CC000001/")
         assert response.status_code == 200
         assert response.context["voter"].county_name == "WAKE"
+        assert response.context["voter"].precinct_desc == "PRECINCT 05"
+
+    def test_precinct_shown_on_events(self, client):
+        VoterEventFactory(ncid="DD000001", pct_description="PRECINCT 03")
+        VoterEventView.refresh()
+        response = client.get("/voter/DD000001/")
+        assert response.context["events"][0].pct_description == "PRECINCT 03"

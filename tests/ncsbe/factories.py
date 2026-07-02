@@ -19,6 +19,8 @@ class VoterFactory(factory.django.DjangoModelFactory):
     birth_year = "1985"
     age_at_year_end = "40"
     registr_dt = "01/15/2010"
+    precinct_abbrv = "01"
+    precinct_desc = "PRECINCT 01"
 
 
 class VoterEventFactory(factory.django.DjangoModelFactory):
@@ -32,3 +34,5 @@ class VoterEventFactory(factory.django.DjangoModelFactory):
     voting_method = "EARLY VOTING IN-PERSON"
     voted_party_cd = "DEM"
     voted_party_desc = "DEMOCRATIC"
+    pct_label = "01"
+    pct_description = "PRECINCT 01"

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Count, Q
+from django.db.models import Count, ExpressionWrapper, FloatField, Q
+from django.db.models.functions import Round
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import cache_page
@@ -146,10 +147,32 @@ def county_registrations(request: HttpRequest, county_name: str) -> HttpResponse
         "registration_status_code",
     )[:25]
 
+    def _pct(num_expr):
+        return Round(ExpressionWrapper(num_expr * 100.0 / Count("ncid"), output_field=FloatField()))
+
+    precinct_stats = (
+        qs.filter(registration_status_code="A")
+        .exclude(precinct_desc="")
+        .values("precinct_abbrv", "precinct_desc")
+        .annotate(
+            active_voters=Count("ncid"),
+            pct_black=_pct(Count("ncid", filter=Q(race_code=RaceCode.BLACK))),
+            pct_white=_pct(Count("ncid", filter=Q(race_code=RaceCode.WHITE))),
+            pct_asian=_pct(Count("ncid", filter=Q(race_code=RaceCode.ASIAN))),
+            pct_hispanic=_pct(Count("ncid", filter=Q(ethnicity_code=EthnicCode.HISPANIC))),
+        )
+        .order_by("-active_voters")
+    )
+
     return render(
         request,
         "ncsbe/county_registrations.html",
-        {"county_name": county_name, "stats": stats, "sample_voters": sample_voters},
+        {
+            "county_name": county_name,
+            "stats": stats,
+            "sample_voters": sample_voters,
+            "precinct_stats": precinct_stats,
+        },
     )
 
 
