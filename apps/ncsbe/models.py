@@ -340,12 +340,12 @@ class VoterView(pg.MaterializedView):
     precinct_abbrv = models.CharField(
         max_length=6,
         blank=True,
-        db_comment="(empty), 0001, 0003, 0005, 001, 0011, 0012, 0013, 0014, 0015, 0016, 0017, 0018, 0019, 002, 0020, 0020A, 0020B, 0021, 0022 ... (1954 distinct)",
+        db_comment="Precinct abbreviation code for the voter's registered precinct: (empty), 0001, 0003, 0005, 001, 0011, 0012, 0013, 0014, 0015, 0016, 0017, 0018, 0019, 002, 0020, 0020A, 0020B, 0021, 0022 ... (1954 distinct)",
     )
     precinct_desc = models.CharField(
         max_length=60,
         blank=True,
-        db_comment="(empty), 0005, 001, 0019, 002, 0020A, 0020B, 003, 0030, 004, 0044, 0045, 006, 007, 008, 009, 01, 01-02, 01-04, 01-07 ... (2510 distinct)",
+        db_comment="Precinct name for the voter's registered precinct: (empty), 0005, 001, 0019, 002, 0020A, 0020B, 003, 0030, 004, 0044, 0045, 006, 007, 008, 009, 01, 01-02, 01-04, 01-07 ... (2510 distinct)",
     )
     ncid = models.CharField(
         max_length=12,
@@ -460,12 +460,12 @@ class VoterEventView(pg.MaterializedView):
     pct_label = models.CharField(
         max_length=6,
         blank=True,
-        db_comment="0001, 0002, 0003, 0005, 0007, 0008, 001, 0010, 0011, 0012, 0013, 0014, 0015, 0016, 0017, 0018, 0019, 002, 0020, 0020A ... (2170 distinct)",
+        db_comment="Precinct code at time of election: 0001, 0002, 0003, 0005, 0007, 0008, 001, 0010, 0011, 0012, 0013, 0014, 0015, 0016, 0017, 0018, 0019, 002, 0020, 0020A ... (2170 distinct)",
     )
     pct_description = models.CharField(
         max_length=60,
         blank=True,
-        db_comment="0005, 001, 0019, 002, 0020A, 0020B, 003, 0030, 004, 0044, 0045, 005, 006, 007, 008, 009, 01, 01-02, 01-04, 01-06 ... (2781 distinct)",
+        db_comment="Precinct name at time of election: 0005, 001, 0019, 002, 0020A, 0020B, 003, 0030, 004, 0044, 0045, 005, 006, 007, 008, 009, 01, 01-02, 01-04, 01-06 ... (2781 distinct)",
     )
 
     class Meta:
