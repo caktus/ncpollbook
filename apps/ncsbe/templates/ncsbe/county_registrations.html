@@ -102,4 +102,40 @@
   </div>
 
 </div>
+
+{# Precinct breakdown #}
+<div class="card bg-base-200 mt-6">
+  <div class="card-body p-4">
+    <h2 class="card-title text-lg mb-2">Precincts — Active Voter Demographics</h2>
+    <div class="overflow-x-auto">
+      <table class="table table-xs table-zebra w-full">
+        <thead>
+          <tr>
+            <th>Precinct</th>
+            <th class="text-right">Active Voters</th>
+            <th class="text-right">% Black</th>
+            <th class="text-right">% White</th>
+            <th class="text-right">% Asian</th>
+            <th class="text-right">% Hispanic</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in precinct_stats %}
+          <tr class="hover:bg-base-300">
+            <td>{{ p.precinct_desc }}</td>
+            <td class="text-right">{{ p.active_voters|intcomma }}</td>
+            <td class="text-right">{{ p.pct_black }}%</td>
+            <td class="text-right">{{ p.pct_white }}%</td>
+            <td class="text-right">{{ p.pct_asian }}%</td>
+            <td class="text-right">{{ p.pct_hispanic }}%</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-base-content/50">No precinct data available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

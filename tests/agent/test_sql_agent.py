@@ -125,7 +125,7 @@ class TestSqlExamples:
             cursor.execute(f"EXPLAIN {sql.rstrip(';').rstrip()}")
 
     def test_example_count(self):
-        assert len(SQL_EXAMPLES) == 7
+        assert len(SQL_EXAMPLES) == 10
 
 
 class TestSqlGenSystemPrompt:
