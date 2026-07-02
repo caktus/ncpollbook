@@ -51,4 +51,5 @@ This is a web application for importing and searching voter registration and his
 ### Agent Workflow
 
 - Always maintain a detailed todo/checklist list.
+- Always run pre-commit hooks
 - Always run full test suite (`uv run pytest`) and LLM evals (`uv run pytest -m llm`) and ruff pre-commit hooks as the last tasks in your todo list.

@@ -52,6 +52,11 @@
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: yes
+
+    - name: Restart PostgreSQL
+      ansible.builtin.systemd:
+        name: "postgresql@{{ postgresql_version }}-main"
+        state: restarted
   pre_tasks:
     - name: Add PGDG repository
       ansible.builtin.deb822_repository:
@@ -66,6 +71,12 @@
   roles:
     - role: geerlingguy.postgresql
   tasks:
+    - name: Check PostgreSQL is listening on all configured addresses
+      ansible.builtin.shell: ss -tlnp | grep ':5432'
+      register: pg_listen_check
+      changed_when: "'10.0.1.1' not in pg_listen_check.stdout"
+      notify: Restart PostgreSQL
+
     - name: Install packages
       ansible.builtin.apt:
         name:
